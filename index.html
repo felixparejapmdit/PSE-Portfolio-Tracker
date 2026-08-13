@@ -88,7 +88,7 @@ a{color:var(--ink)}
 .topbar .live-dot.live{background:var(--up);box-shadow:0 0 0 3px rgba(52,211,153,.2);animation:glow 2s ease-in-out infinite}
 .topbar .live-dot.fetching{background:var(--gold);animation:spin2 1s linear infinite}
 .topbar .live-dot.fail{background:var(--down)}
-.topbar .live-dot.closed{background:var(--muted)}
+.topbar .live-dot.closed{background:var(--down)}
 .topbar .tagline{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--soft);margin-top:2px}
 .topbar .sub{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
 .topbar .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -98,7 +98,7 @@ a{color:var(--ink)}
 .hchip.live .dot{background:var(--up);box-shadow:0 0 0 3px rgba(52,211,153,.2);animation:glow 2s ease-in-out infinite}
 .hchip.fetching .dot{background:var(--gold);animation:spin2 1s linear infinite}
 .hchip.fail .dot{background:var(--down)}
-.hchip.closed .dot{background:var(--muted)}
+.hchip.closed .dot{background:var(--down)}
 @keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.2)}50%{box-shadow:0 0 0 6px rgba(52,211,153,.08)}}
 @keyframes spin2{to{transform:rotate(360deg)}}
 
@@ -442,7 +442,8 @@ footer{margin-top:50px;text-align:center;font-family:var(--mono);font-size:11px;
   .charts-row{grid-template-columns:1fr}
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100vh;transform:translateX(-100%);transition:transform .25s ease;box-shadow:var(--shadow-lg)}
   .sidebar.open{transform:translateX(0)}
-  .menu-btn{display:inline-flex}
+  .menu-btn{display:inline-flex;position:fixed;top:14px;left:14px;z-index:55;box-shadow:var(--shadow-lg)}
+  .topbar .ttl-wrap{padding-left:44px}
 }
 @media(max-width:820px){
   .txform,.shownew{grid-template-columns:1fr 1fr}
