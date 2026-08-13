@@ -2,7 +2,7 @@
   "name": "Manila Ledger — PSE Portfolio Tracker",
   "short_name": "Manila Ledger",
   "description": "Track your Philippine Stock Exchange portfolio, dividends, net worth, and cash flow.",
-  "start_url": "./pse-portfolio.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
