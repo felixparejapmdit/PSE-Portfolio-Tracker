@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manila Ledger — PSE Portfolio Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2360A5FA'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-size='60' font-family='Arial,sans-serif' font-weight='800' fill='%23FFFFFF' text-anchor='middle'%3E%E2%82%B1%3C/text%3E%3C/svg%3E">
+<script>try{if(localStorage.getItem('pse-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch{}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0A0E1A; --bg2:#0D1322; --card:#131A2C; --card2:#0F1526; --hover:#1B2438;
+  --ink:#EEF1F8; --soft:#A9B4CC; --muted:#6D7893;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --gold:#F0B429; --gold2:#D69A00; --gold-bg:rgba(240,180,41,.12);
+  --up:#34D399; --up-bg:rgba(52,211,153,.12); --down:#FB7185; --down-bg:rgba(251,113,133,.14);
+  --navy:#0A0E1A; --navy2:#0D1424;
+  --accent:#3B82F6; --accent2:#60A5FA; --accent-bg:rgba(59,130,246,.14);
+  --cyan:#22D3EE; --violet:#A78BFA; --indigo:#6C7FE0;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Archivo',system-ui,sans-serif;
+  --r:14px;
+  --sidebar-w:236px;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.28);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --bg:#F5F7FA; --bg2:#F8FAFD; --card:#FFFFFF; --card2:#FDFDF8; --hover:#F0F4FB;
+  --ink:#0D1F3C; --soft:#3A4F6E; --muted:#64748B;
+  --line:#E2E8F2; --line2:#C5D0E0;
+  --gold:#F0B429; --gold2:#D69A00; --gold-bg:#FFFBEF;
+  --up:#0E8A5A; --up-bg:#E6F4EE; --down:#C8192D; --down-bg:#FCECEA;
+  --navy:#0D1F3C; --navy2:#1A3360;
+  --accent:#2563EB; --accent2:#1E40AF; --accent-bg:#EAF1FE;
+  --cyan:#0E7490; --violet:#7C3AED; --indigo:#4A5AC4;
+  --shadow:0 1px 2px rgba(13,31,60,.05),0 4px 14px rgba(13,31,60,.07);
+  --shadow-lg:0 4px 10px rgba(13,31,60,.08),0 14px 30px rgba(13,31,60,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;min-height:100vh}
+button{font-family:var(--sans);cursor:pointer}
+a{color:var(--ink)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 22px 80px}
+
+/* ── APP SHELL ──────────────────────────── */
+.app{display:flex;align-items:stretch;min-height:100vh}
+.main{flex:1;min-width:0}
+
+/* ── SIDEBAR ────────────────────────────── */
+.sidebar{width:var(--sidebar-w);flex:none;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:60}
+.sidebar .brand{display:flex;align-items:center;gap:7px;padding:18px 10px 15px 14px;border-bottom:1px solid var(--line)}
+.sidebar .brand .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent2),var(--accent) 70%);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex:none}
+.sidebar .brand .info{flex:1;min-width:0}
+.sidebar .brand .tt{font-weight:800;font-size:14px;line-height:1.25;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar .brand .st{font-size:8.5px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.theme-toggle{width:27px;height:27px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--soft);font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;transition:background .15s,color .15s,border-color .15s}
+.theme-toggle:hover{background:var(--hover);border-color:var(--soft);color:var(--ink)}
+.snav{padding:10px 10px;flex:1}
+.snav .grp{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:14px 10px 6px}
+.snav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--soft);text-decoration:none;font-size:13px;font-weight:600;transition:background .15s,color .15s}
+.snav a .ic{width:17px;text-align:center;flex:none;font-size:13px;opacity:.9}
+.snav a:hover{background:var(--hover);color:var(--ink)}
+.snav a.active{background:var(--accent-bg);color:var(--accent2)}
+.sidebar .sfoot{padding:12px;border-top:1px solid var(--line)}
+.nw-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.nw-card .lbl{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.nw-card .val{font-family:var(--mono);font-size:16.5px;font-weight:700;margin-top:4px;color:var(--ink)}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50}
+.scrim.show{display:block}
+.menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:var(--card);border:1px solid var(--line);color:var(--ink);font-size:16px;flex:none}
+
+/* ── TOPBAR ─────────────────────────────── */
+.topbar{padding:26px 0 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.topbar .ttl-wrap{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.topbar .ttl-ic{width:32px;height:32px;border-radius:9px;background:var(--accent-bg);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;margin-top:2px}
+.topbar h1{font-size:clamp(18px,2.4vw,23px);font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.topbar .live-dot{width:8px;height:8px;border-radius:50%;background:#5A7BA8;flex:none;transition:background .3s}
+.topbar .live-dot.live{background:var(--up);box-shadow:0 0 0 3px rgba(52,211,153,.2);animation:glow 2s ease-in-out infinite}
+.topbar .live-dot.fetching{background:var(--gold);animation:spin2 1s linear infinite}
+.topbar .live-dot.fail{background:var(--down)}
+.topbar .live-dot.closed{background:var(--muted)}
+.topbar .tagline{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--soft);margin-top:2px}
+.topbar .sub{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
+.topbar .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* live status pill */
+.hchip{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;font-family:var(--mono);font-size:11.5px;background:var(--card);border:1px solid var(--line);color:var(--soft);margin-top:8px}
+.hchip .dot{width:8px;height:8px;border-radius:50%;background:#5A7BA8;flex:none;transition:background .3s}
+.hchip.live .dot{background:var(--up);box-shadow:0 0 0 3px rgba(52,211,153,.2);animation:glow 2s ease-in-out infinite}
+.hchip.fetching .dot{background:var(--gold);animation:spin2 1s linear infinite}
+.hchip.fail .dot{background:var(--down)}
+.hchip.closed .dot{background:var(--muted)}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.2)}50%{box-shadow:0 0 0 6px rgba(52,211,153,.08)}}
+@keyframes spin2{to{transform:rotate(360deg)}}
+
+/* ── KPI CARDS ──────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:22px}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+.kpi-card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.kpi-card .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi-card .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.kpi-card .ic.c1{background:rgba(59,130,246,.15);color:#60A5FA}
+.kpi-card .ic.c2{background:rgba(52,211,153,.15);color:#34D399}
+.kpi-card .ic.c3{background:rgba(240,180,41,.15);color:#F0B429}
+.kpi-card .ic.c4{background:rgba(139,92,246,.15);color:#A78BFA}
+.kpi-card .ic.c5{background:rgba(251,113,133,.15);color:#FB7185}
+.kpi-card .ic.c6{background:rgba(34,211,238,.15);color:#22D3EE}
+.kpi-card .val{font-family:var(--mono);font-size:21px;font-weight:700;margin-top:10px;letter-spacing:-.01em;color:var(--ink)}
+.kpi-card .val.up{color:var(--up)}.kpi-card .val.down{color:var(--down)}
+.kpi-card .note{font-size:11.5px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+
+/* ── CHART CARDS ────────────────────────── */
+.charts-row{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-bottom:16px;align-items:stretch}
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.chart-card .chd{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--soft);margin-bottom:14px}
+.chart-card .chd .ic{color:var(--accent2)}
+.chart-body{flex:1;display:flex;flex-direction:column;justify-content:center}
+.chart-svg-wrap svg{width:100%;height:auto;display:block;overflow:visible}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.donut-svg{width:min(220px,100%);height:auto}
+.donut-legend{display:flex;flex-wrap:wrap;gap:7px 16px;justify-content:center}
+.donut-legend .li{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--soft)}
+.donut-legend .sw{width:9px;height:9px;border-radius:3px;flex:none}
+.donut-legend b{color:var(--ink);font-family:var(--mono);font-weight:600}
+.chart-empty{color:var(--muted);font-size:13px;text-align:center;padding:44px 10px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px;font-size:11.5px;color:var(--soft)}
+.chart-legend .li{display:flex;align-items:center;gap:6px}
+.chart-legend .sw{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* ── RANKED BAR LIST (return %, etc.) ──────── */
+.rank-list{display:flex;flex-direction:column;gap:9px}
+.rank-row{display:grid;grid-template-columns:56px 1fr 66px;gap:10px;align-items:center;font-size:12.5px}
+.rank-row .rk-lbl{font-weight:700;font-family:var(--mono);color:var(--ink)}
+.rank-row .rk-track{position:relative;height:10px;background:var(--card2);border-radius:5px;overflow:hidden}
+.rank-row .rk-fill{position:absolute;top:0;bottom:0;border-radius:5px}
+.rank-row .rk-val{font-family:var(--mono);text-align:right;font-weight:600}
+.rank-row .rk-val.up{color:var(--up)}.rank-row .rk-val.down{color:var(--down)}
+
+/* ── PROGRESS BARS (win rate) ───────────────── */
+.prog-block{margin-bottom:16px}
+.prog-block:last-child{margin-bottom:0}
+.prog-hd{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;font-weight:700;margin-bottom:6px}
+.prog-hd .pct{font-family:var(--mono);color:var(--up)}
+.prog-track{height:9px;background:var(--card2);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;background:var(--up);border-radius:5px;transition:width .3s}
+.prog-note{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--mono)}
+
+/* ── STAT MINI ROWS (drawdown / change panels) ─ */
+.stat-mini{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.stat-mini:last-child{margin-bottom:0}
+.stat-mini .sm-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stat-mini .sm-val{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:3px}
+.stat-mini .sm-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.mini-row{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.mini-row:last-child{border:none}
+.mini-row .mr-lbl{color:var(--soft)}
+.mini-row .mr-val{font-family:var(--mono);font-weight:600}
+
+/* ── INSIGHT LIST ───────────────────────────── */
+.insight-list{display:flex;flex-direction:column;gap:8px}
+.insight-row{display:flex;align-items:flex-start;gap:10px;background:var(--card2);border-radius:9px;padding:10px 13px;font-size:13px;color:var(--soft)}
+.insight-row .badge{width:18px;height:18px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:1px}
+.insight-row .badge.pos{background:var(--up-bg);color:var(--up)}
+.insight-row .badge.neg{background:var(--down-bg);color:var(--down)}
+.insight-row b{color:var(--ink)}
+
+/* ── CASH INPUT ─────────────────────────────── */
+.cash-input{font-family:var(--mono);font-size:21px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:5px 9px;width:100%;margin-top:8px;background:var(--card2);color:var(--ink)}
+.cash-input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+
+/* ── SELECT / TOOLBAR ROW ───────────────────── */
+.sel{font-family:var(--sans);font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:9px;padding:8px 13px;background:var(--card);color:var(--ink);cursor:pointer}
+.sel:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.info-box{background:var(--card2);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;font-size:12.5px;color:var(--soft);line-height:1.6;margin-bottom:16px}
+.info-box b{color:var(--ink)}
+
+/* ── REPORT ──────────────────────────────────── */
+.report-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px;box-shadow:var(--shadow);margin-bottom:16px}
+.report-card h3{font-size:19px;font-weight:800}
+.report-card .gen{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
+.report-note{background:var(--card2);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;font-size:11.5px;color:var(--muted);line-height:1.6}
+
+/* ── BADGES / FLAGS ──────────────────────────── */
+.flag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:999px;background:var(--down-bg);color:var(--down)}
+.flag.ok{background:var(--up-bg);color:var(--up)}
+
+/* ── DIVIDEND CALENDAR ───────────────────────── */
+.divcal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.divcal-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 17px;box-shadow:var(--shadow)}
+.divcal-card .dc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.divcal-card .tk{font-weight:800;font-size:14px}
+.divcal-card .co{font-size:11px;color:var(--muted);margin-bottom:8px}
+.divcal-card .body{font-size:12px;color:var(--soft);line-height:1.5;margin-bottom:10px}
+.divcal-card .fld-row{display:none;flex-direction:column;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.divcal-card.editing .fld-row{display:flex}
+.divcal-card .fld-row input{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:var(--card2);color:var(--ink)}
+.divcal-card .fld-row label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+
+/* ── FORM CARD (expense/income log) ─────────────── */
+.form-card{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.form-card.show{display:block}
+.form-card .frow{display:grid;grid-template-columns:1fr 1fr 1.4fr 1fr auto auto;gap:8px;align-items:end}
+.form-card .fld label{font-size:10px}
+.form-card input,.form-card select{font-size:16px !important;width:100%}
+.chk-fld{display:flex;align-items:center;gap:6px;padding-bottom:9px}
+.chk-fld input{width:auto !important}
+.chk-fld label{font-size:12px;color:var(--soft);font-weight:600}
+
+/* ── SEARCH / FILTER ROW ────────────────────────── */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.search-input{flex:1;min-width:160px;font-family:var(--sans);font-size:13px;border:1px solid var(--line);border-radius:9px;padding:8px 13px;background:var(--card2);color:var(--ink)}
+.search-input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.rec-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-bg);color:var(--accent2)}
+
+/* ── REBALANCE ───────────────────────────────────── */
+.rebal-target{width:74px;font-family:var(--mono);font-size:13px;text-align:right;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:var(--card2);color:var(--ink)}
+.rebal-target:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.save-ic{border:1px solid var(--line);background:var(--card);color:var(--soft);font-size:12px;padding:5px 9px;border-radius:7px}
+.save-ic:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ── EMPTY BLOCK ─────────────────────────────────── */
+.empty-block{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:36px 10px;color:var(--muted);font-size:12.5px;text-align:center}
+.empty-block .bi{font-size:24px;opacity:.5}
+
+/* ── PRINT ───────────────────────────────────────── */
+@media print{
+  .sidebar,.topbar,.scrim,.menu-btn,footer,.acts{display:none !important}
+  #top>.kpi-grid,#top>.charts-row,#top>.chart-card{display:none !important}
+  #top>.sec:not(#report-sec){display:none !important}
+  #report-sec .sec-hd .hint{display:none !important}
+  body,.main,.wrap{background:#fff !important;color:#000 !important}
+  .report-card,.kpi-card,.chart-card,.report-note{background:#fff !important;border-color:#ccc !important;box-shadow:none !important;color:#000 !important}
+  .kpi-card .val,.report-card h3,.mini-row .mr-val{color:#000 !important}
+}
+
+/* ── SECTION TITLES ─────────────────────── */
+.sec{margin-top:38px}
+.sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sec-hd h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--ink);white-space:nowrap}
+.sec-hd .hr{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.sec-hd .hint{font-size:11.5px;color:var(--muted);min-width:0}
+
+/* ── RIBBON ─────────────────────────────── */
+.ribbon{display:flex;gap:2px;height:64px;background:var(--bg);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--shadow);padding:2px}
+.seg{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11.5px;cursor:pointer;transition:filter .15s,transform .15s;min-width:0;border-radius:6px}
+.seg:first-child{border-top-left-radius:calc(var(--r) - 2px);border-bottom-left-radius:calc(var(--r) - 2px)}
+.seg:last-child{border-top-right-radius:calc(var(--r) - 2px);border-bottom-right-radius:calc(var(--r) - 2px)}
+.seg:hover{filter:brightness(1.1);transform:translateY(-2px)}
+.seg .s{white-space:nowrap;overflow:hidden;max-width:96%;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.seg .p{font-family:var(--mono);font-size:10px;opacity:.85}
+.seg .pd{position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.lgnd{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-family:var(--mono);color:var(--soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px 4px 8px;cursor:pointer;transition:border-color .15s,color .15s}
+.chip:hover{border-color:var(--soft);color:var(--ink)}
+.chip b{font-family:var(--sans);color:var(--ink);font-weight:700}
+.chip .amt{color:var(--muted)}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* ── DATA SOURCE CARD ───────────────────── */
+.src-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow)}
+.src-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.src-card p{font-size:13px;color:var(--soft);margin-bottom:14px;max-width:720px;line-height:1.6}
+.src-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.stab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--muted);transition:all .15s}
+.stab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.src-panel{display:none}.src-panel.show{display:block}
+/* xlsx panel */
+.drop-zone{border:2px dashed var(--line);border-radius:var(--r);padding:30px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg)}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--gold);background:var(--gold-bg)}
+.drop-zone .icon{font-size:32px;margin-bottom:8px}
+.drop-zone p{font-size:13.5px;color:var(--soft)}
+.drop-zone strong{color:var(--ink)}
+.drop-zone input{display:none}
+.sheet-pick{margin-top:14px;display:none}
+.sheet-pick h4{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.sheet-list{display:flex;flex-wrap:wrap;gap:6px}
+.sheet-btn{padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--soft);cursor:pointer;transition:all .15s}
+.sheet-btn:hover{border-color:var(--navy);color:var(--navy)}
+.sheet-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* gid panel */
+.gid-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld label{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.fld input{font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--card2);color:var(--ink)}
+.fld input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.fld .hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ── STOCK PICKER (combobox) ────────────────── */
+.stock-pick{width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:9px;padding:9px 30px 9px 11px;background:var(--card2);color:var(--ink);cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;height:39px}
+.stock-pick:focus,.stock-pick.open{outline:2px solid var(--gold);border-color:var(--gold)}
+.stock-pick::after{content:'';position:absolute;right:12px;top:44%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-50%) rotate(45deg);pointer-events:none}
+.stock-pick .sw3{width:9px;height:9px;border-radius:3px;flex:none}
+.stock-pick .co2{color:var(--muted);font-family:var(--sans);font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+.stock-panel{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);z-index:30;overflow:hidden}
+.stock-search{width:100%;font-family:var(--sans);font-size:13px;border:none;border-bottom:1px solid var(--line);padding:10px 12px;background:var(--bg);color:var(--ink)}
+.stock-search:focus{outline:none;background:var(--gold-bg)}
+.stock-list{max-height:230px;overflow-y:auto}
+.stock-opt{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:13px}
+.stock-opt:hover{background:var(--hover)}
+.stock-opt .sw3{width:9px;height:9px;border-radius:3px;flex:none}
+.stock-opt .tk{font-weight:700;font-family:var(--mono);flex:none}
+.stock-opt .co2{flex:1;color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stock-opt .px2{font-family:var(--mono);font-size:11.5px;color:var(--soft);flex:none}
+.stock-opt.new{border-top:1px solid var(--line);color:var(--gold2);font-weight:700}
+.stock-opt.new:hover{background:var(--gold-bg)}
+.stock-empty{padding:14px 12px;color:var(--muted);font-size:12.5px;text-align:center}
+
+/* ── TYPE TOGGLE (Buy/Sell) ──────────────────── */
+.seg-toggle{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;height:39px}
+.seg-opt{flex:1;border:none;background:var(--bg);color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+.seg-opt+.seg-opt{border-left:1px solid var(--line)}
+.seg-opt:hover:not(.active){background:var(--hover);color:var(--ink)}
+.seg-opt.buy.active{background:var(--up-bg);color:var(--up)}
+.seg-opt.sell.active{background:var(--down-bg);color:var(--down)}
+.src-status{margin-top:12px;font-size:12.5px;font-family:var(--mono);white-space:pre-wrap;color:var(--muted);line-height:1.6;border-radius:9px;padding:10px 13px;background:var(--bg)}
+.src-status.ok{color:var(--up);background:var(--up-bg)}
+.src-status.err{color:var(--down);background:var(--down-bg)}
+.src-status.err a{color:var(--down);font-weight:700}
+.src-status b{font-weight:700}
+.src-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+
+/* ── BUTTONS ─────────────────────────────── */
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 15px;font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--soft);color:var(--soft);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.45;cursor:wait;transform:none}
+.btn.prim{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.prim:hover{background:var(--accent2);color:#0A0E1A;box-shadow:0 3px 10px rgba(59,130,246,.3)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#2E1D00}
+.btn.gold:hover{background:#FFC72C;box-shadow:0 3px 10px rgba(240,180,41,.35)}
+.btn.sm{padding:5px 11px;font-size:12px}
+
+/* ── HOLDINGS TABLE ─────────────────────── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:960px}
+thead th{background:var(--navy);color:var(--soft);font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:11px 12px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:first-child{text-align:left;border-radius:0}
+thead th .arr{color:var(--gold);margin-left:3px}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:var(--hover)}
+tbody tr.active{background:var(--gold-bg)}
+tbody td{padding:10px 12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:13px;text-align:right;white-space:nowrap}
+tbody td:first-child{text-align:left}
+tfoot td{padding:11px 12px;border-top:2px solid var(--ink);background:var(--hover);font-family:var(--mono);font-size:13px;font-weight:700;text-align:right}
+tfoot td:first-child{text-align:left;font-family:var(--sans)}
+.tick{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-weight:700}
+.tick .sw2{width:10px;height:10px;border-radius:3px;flex:none}
+.tick .co{display:block;font-size:11px;color:var(--muted);font-weight:400;font-family:var(--sans)}
+.td-up{color:var(--up);font-weight:600}.td-dn{color:var(--down);font-weight:600}
+.sig{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 9px;border-radius:999px;display:inline-block}
+.sig.b{background:var(--up-bg);color:var(--up)}.sig.h{background:var(--down-bg);color:var(--down)}
+input.pr{width:92px;font-family:var(--mono);font-size:13px;text-align:right;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:var(--card2);color:var(--ink)}
+input.pr:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.dchg{font-size:10px;font-family:var(--mono);margin-top:2px;display:block}
+.dchg.up{color:var(--up)}.dchg.dn{color:var(--down)}
+.rm{border:1px solid transparent;background:none;color:var(--muted);font-size:13px;padding:5px 8px;border-radius:7px;font-weight:700}
+.rm:hover{color:var(--down);background:var(--down-bg)}
+.rm.armed{color:#fff;background:var(--down);font-size:11px;white-space:nowrap}
+
+/* tools bar */
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;align-items:center}
+.tmsg{font-size:12.5px;color:var(--muted)}.tmsg.ok{color:var(--up)}.tmsg.err{color:var(--down)}
+.sstate{font-family:var(--mono);font-size:11px;color:var(--up);margin-left:auto}
+.sstate.warn{color:var(--gold2)}
+
+/* ── TX LOG ──────────────────────────────── */
+.log-wrap{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+.log-wrap table{min-width:620px}
+.log-wrap thead th{position:sticky;top:0;z-index:1;cursor:default}
+.side{font-family:var(--sans);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.side.b{background:var(--up-bg);color:var(--up)}.side.s{background:var(--down-bg);color:var(--down)}
+
+/* ── TX FORM ─────────────────────────────── */
+.txform{display:grid;grid-template-columns:1.2fr .8fr .8fr .9fr 1fr auto;gap:8px;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.txform .fld label{font-size:10px}
+.txform input,.txform select{font-size:16px !important;width:100%}
+.newsym{display:none}.shownew .newsym{display:flex}
+.shownew{grid-template-columns:1fr 1fr .8fr .8fr .9fr 1fr auto}
+.txmsg{font-size:12.5px;margin-top:8px;min-height:18px}
+.txmsg.ok{color:var(--up)}.txmsg.err{color:var(--down)}
+.af{font-size:10px;color:var(--gold2);font-family:var(--mono)}
+
+/* ── DETAIL PANEL ────────────────────────── */
+.det{display:none;margin-top:28px}
+.det.open{display:block}
+.det-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-lg)}
+.det-hd{padding:18px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.det-hd .bigsw{width:40px;height:40px;border-radius:10px;flex:none}
+.det-hd h3{font-size:20px;font-weight:800}
+.det-hd .co{font-size:12px;color:var(--muted)}
+.det-hd .sp{flex:1}
+.mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line)}
+.met{background:var(--card);padding:14px 18px}
+.met .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.met .val{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:4px}
+.met .val.up{color:var(--up)}.met .val.dn{color:var(--down)}
+.met .sub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.stxlog{padding:14px 22px;border-top:1px solid var(--line)}
+.stxlog h4{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.stxlog .row{display:flex;gap:12px;font-family:var(--mono);font-size:12px;padding:5px 0;border-bottom:1px dashed var(--line);align-items:center;flex-wrap:wrap}
+.stxlog .row:last-child{border:none}
+.nz{padding:20px 22px;border-top:1px solid var(--line);background:var(--bg2)}
+.nz .empty{color:var(--muted);font-size:13.5px}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.spill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 12px;border-radius:999px}
+.spill.pos{background:var(--up-bg);color:var(--up)}.spill.neg{background:var(--down-bg);color:var(--down)}.spill.neu{background:var(--hover);color:var(--muted)}
+.hl{padding:8px 14px;margin-top:10px;background:var(--card);border-radius:0 9px 9px 0;border:1px solid var(--line);border-left:3px solid var(--gold)}
+.hl .t{font-weight:700;font-size:13.5px}.hl .d{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}.hl .su{font-size:12.5px;color:var(--soft);margin-top:4px}
+.analysis{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:13px 16px;font-size:13px;color:var(--soft)}
+.analysis b{color:var(--ink)}
+.errmsg{color:var(--down);font-size:13px;background:var(--down-bg);border-radius:9px;padding:10px 14px}
+
+/* ── AI SETUP ────────────────────────────── */
+.aikey-input{font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 11px;background:var(--card2);color:var(--ink);width:min(340px,100%)}
+.aikey-input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.aistat{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+/* ── INCOME CARDS ────────────────────────── */
+.divi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.dc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.dc:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.dc .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.dc .val{font-family:var(--mono);font-size:20px;font-weight:600;margin-top:6px}
+.dc .val.up{color:var(--up)}.dc .val.dn{color:var(--down)}
+.dc .note{font-size:11.5px;color:var(--muted);margin-top:4px}
+.dc input{font-family:var(--mono);font-size:17px;font-weight:600;border:1px solid var(--line);border-radius:8px;padding:5px 9px;width:100%;margin-top:4px;background:var(--card2);color:var(--up)}
+
+footer{margin-top:50px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* ── RESPONSIVE ──────────────────────────── */
+@media(max-width:980px){
+  .charts-row{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;height:100vh;transform:translateX(-100%);transition:transform .25s ease;box-shadow:var(--shadow-lg)}
+  .sidebar.open{transform:translateX(0)}
+  .menu-btn{display:inline-flex}
+}
+@media(max-width:820px){
+  .txform,.shownew{grid-template-columns:1fr 1fr}
+  .txform .btn,.shownew .btn{grid-column:1/-1}
+  .gid-grid{grid-template-columns:1fr}
+  .wrap{padding:0 16px 70px}
+  .form-card .frow{grid-template-columns:1fr 1fr}
+  .form-card .frow button{grid-column:1/-1}
+}
+@media(max-width:640px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .mrow{grid-template-columns:repeat(2,1fr)}
+  .ribbon{height:50px}.seg .p{display:none}
+  .det-hd .sp{display:none}
+  .det-hd .btn{width:100%}
+  input,select,textarea{font-size:16px !important}
+  .btn{padding:9px 14px}
+  .src-tabs{gap:4px}.stab{padding:6px 12px;font-size:12px}
+  .topbar .acts{width:100%}
+  .topbar .acts .btn{flex:1;justify-content:center}
+  .form-card .frow{grid-template-columns:1fr}
+  .sec-hd{flex-wrap:wrap}
+  .sec-hd .acts{width:100%}
+  .sec-hd .acts .btn,.sec-hd .acts .sel{flex:1}
+}
+@media(max-width:420px){
+  .kpi-grid{grid-template-columns:1fr}
+}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scrim" id="scrim" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">₱</div>
+      <div class="info"><div class="tt">Manila Ledger</div><div class="st">PSE Portfolio Tracker</div></div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle light/dark theme" title="Toggle theme">☀️</button>
+    </div>
+    <nav class="snav">
+      <a href="#top" data-spy="top" onclick="closeSidebar()"><span class="ic">📊</span>Overview</a>
+      <div class="grp">Data</div>
+      <a href="#loaddata-sec" data-spy="loaddata-sec" onclick="closeSidebar()"><span class="ic">🔗</span>Load data</a>
+      <a href="#txform-sec" data-spy="txform-sec" onclick="closeSidebar()"><span class="ic">✏️</span>Record trade</a>
+      <a href="#log-sec" data-spy="log-sec" onclick="closeSidebar()"><span class="ic">🧾</span>Investment log</a>
+      <div class="grp">Portfolio</div>
+      <a href="#holdings-sec" data-spy="holdings-sec" onclick="closeSidebar()"><span class="ic">📈</span>Holdings</a>
+      <a href="#performance-sec" data-spy="performance-sec" onclick="closeSidebar()"><span class="ic">📐</span>Performance</a>
+      <a href="#insights-sec" data-spy="insights-sec" onclick="closeSidebar()"><span class="ic">🔍</span>Insights</a>
+      <a href="#rebalance-sec" data-spy="rebalance-sec" onclick="closeSidebar()"><span class="ic">⚖️</span>Rebalance</a>
+      <div class="grp">Income</div>
+      <a href="#dividends-sec" data-spy="dividends-sec" onclick="closeSidebar()"><span class="ic">💰</span>Dividends</a>
+      <a href="#divcal-sec" data-spy="divcal-sec" onclick="closeSidebar()"><span class="ic">📅</span>Dividend calendar</a>
+      <div class="grp">Wealth</div>
+      <a href="#networth-sec" data-spy="networth-sec" onclick="closeSidebar()"><span class="ic">🧮</span>Net worth</a>
+      <a href="#report-sec" data-spy="report-sec" onclick="closeSidebar()"><span class="ic">📄</span>Annual report</a>
+      <div class="grp">Cash flow</div>
+      <a href="#expenses-sec" data-spy="expenses-sec" onclick="closeSidebar()"><span class="ic">🧾</span>Expenses</a>
+      <a href="#cashflow-sec" data-spy="cashflow-sec" onclick="closeSidebar()"><span class="ic">💼</span>Cash flow</a>
+      <div class="grp">AI</div>
+      <a href="#ai-sec" data-spy="ai-sec" onclick="closeSidebar()"><span class="ic">🤖</span>AI setup</a>
+    </nav>
+    <div class="sfoot">
+      <div class="nw-card">
+        <div class="lbl">Portfolio value</div>
+        <div class="val" id="sideVal">₱0.00</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap" id="top">
+
+      <div class="topbar">
+        <div class="ttl-wrap">
+          <button class="menu-btn" id="menuBtn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+          <div class="ttl-ic">📈</div>
+          <div>
+            <h1>Manila Ledger<span class="live-dot" id="liveDot"></span></h1>
+            <div class="tagline">PSE Portfolio Tracker</div>
+            <div class="sub" id="asOf"></div>
+            <div class="hchip" id="liveChip"><span class="dot"></span><span id="liveText">connecting to live feed…</span></div>
+          </div>
+        </div>
+        <div class="acts">
+          <button class="btn" id="expBtn">⬇ Export</button>
+          <button class="btn" id="impBtn">⬆ Import</button>
+          <input type="file" id="impFile" accept=".json" style="display:none">
+          <button class="btn prim" id="liveBtn" onclick="doLive(true)">↻ Refresh</button>
+          <a class="btn gold" href="#txform-sec">＋ Log trade</a>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="kpis"></div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chd"><span class="ic">◔</span>Sector allocation</div>
+          <div class="chart-body"><div class="donut-wrap" id="donutChart"></div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chd"><span class="ic">▤</span>Top holdings by market value</div>
+          <div class="chart-body"><div class="chart-svg-wrap" id="barChart"></div></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:16px">
+        <div class="chd"><span class="ic">〰</span>Cumulative investment over time</div>
+        <div class="chart-body"><div class="chart-svg-wrap" id="lineChart"></div></div>
+      </div>
+
+  <!-- PERFORMANCE -->
+  <section class="sec" id="performance-sec">
+    <div class="sec-hd"><h2>Performance</h2><div class="hr"></div><div class="hint">gain/loss, cost basis, dividends and returns by stock</div></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chd"><span class="ic">↕</span>Gain / loss by stock (₱)</div>
+      <div class="chart-body"><div class="chart-svg-wrap" id="glChart"></div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">▥</span>Cost basis vs market value</div>
+        <div class="chart-body"><div class="chart-svg-wrap" id="cbmvChart"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">🪙</span>Dividend income by stock</div>
+        <div class="chart-body"><div class="chart-svg-wrap" id="divStockChart"></div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chd"><span class="ic">%</span>Return % per stock (best → worst)</div>
+      <div class="chart-body"><div class="rank-list" id="returnRank"></div></div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="sec" id="insights-sec">
+    <div class="sec-hd"><h2>Insights</h2><div class="hr"></div><div class="hint">win rate, drawdown and auto-generated commentary</div></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">⛁</span>Realized vs unrealized gains</div>
+        <div class="chart-body"><div class="chart-svg-wrap" id="ruChart"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">◎</span>Win rate</div>
+        <div class="chart-body" id="winRateBody"></div>
+      </div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">⇊</span>Drawdown from peak</div>
+        <div class="chart-body" id="drawdownBody"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">📅</span>Change since last week / month</div>
+        <div class="chart-body" id="changeBody"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chd"><span class="ic">💬</span>Commentary on major moves</div>
+      <div class="insight-list" id="commentaryList"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chd"><span class="ic">↺</span>Recent closed trades</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="text-align:left">Ticker</th><th>Date sold</th><th>Shares</th><th>Proceeds</th><th>Cost</th><th>Gain/loss</th><th>Return %</th></tr></thead>
+          <tbody id="closedTradesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALLOCATION RIBBON -->
+  <section class="sec">
+    <div class="sec-hd"><h2>Allocation</h2><div class="hr"></div><div class="hint">width = share of capital</div></div>
+    <div class="ribbon" id="ribbon"></div>
+    <div class="lgnd" id="lgnd"></div>
+  </section>
+
+  <!-- DATA SOURCE -->
+  <section class="sec" id="loaddata-sec">
+    <div class="sec-hd"><h2>Load your data</h2><div class="hr"></div><div class="hint">import XLSX or connect via Google Sheet gid</div></div>
+    <div class="src-card">
+      <div class="src-tabs">
+        <button class="stab active" onclick="switchSrc('xlsx',this)">📂 Import XLSX file</button>
+        <button class="stab" onclick="switchSrc('gid',this)">🔗 Google Sheet (gid)</button>
+      </div>
+
+      <!-- XLSX PANEL -->
+      <div class="src-panel show" id="src-xlsx">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('xlsxFile').click()" 
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="onDrop(event)">
+          <input type="file" id="xlsxFile" accept=".xlsx,.xls" onchange="onXlsxFile(event)">
+          <div class="icon">📊</div>
+          <p><strong>Click to browse</strong> or drag your .xlsx file here</p>
+          <p style="font-size:12px;margin-top:6px;color:var(--muted)">Works with your existing Google Sheets file — just download it as .xlsx first<br>
+          (Google Sheets: File → Download → Microsoft Excel)</p>
+        </div>
+        <div class="sheet-pick" id="sheetPick">
+          <h4>Sheets found — click to import each one</h4>
+          <div class="sheet-list" id="sheetList"></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">Import <b>Investment Log</b> first, then <b>Dashboard</b> for current prices, then your <b>Dividend Logs</b> for income totals.</p>
+        </div>
+      </div>
+
+      <!-- GID PANEL -->
+      <div class="src-panel" id="src-gid">
+        <p style="font-size:13px;color:var(--soft);margin-bottom:12px">Enter your spreadsheet ID (or full URL) and the <b>gid</b> for each tab. Find the gid in the address bar when you open a tab: <span style="font-family:var(--mono)">/edit#gid=<b>1571827124</b></span>. The sheet must be shared as "Anyone with the link → Viewer".</p>
+        <div class="gid-grid">
+          <div class="fld"><label>Spreadsheet URL or ID</label>
+            <input id="gSheetId" placeholder="https://docs.google.com/spreadsheets/d/…">
+          </div>
+          <div class="fld"><label>Investment Log gid <span class="af">required</span></label>
+            <input id="gLogGid" placeholder="e.g. 1571827124">
+            <span class="hint">gid number OR tab name as fallback</span></div>
+          <div class="fld"><label>Dashboard gid <span class="af">optional</span></label>
+            <input id="gDashGid" placeholder="e.g. 0">
+            <span class="hint">pulls current prices + net dividends</span></div>
+        </div>
+        <div class="fld" style="margin-top:14px">
+          <label>Dividend Log tabs <span class="af">optional</span></label>
+          <span class="hint">one row per year — add as many as you need, for any year past or future</span>
+          <div id="divGidRows" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          <button class="btn sm" style="margin-top:2px;align-self:flex-start" onclick="addDivGidRow()">＋ Add year</button>
+        </div>
+        <div class="src-row">
+          <button class="btn gold" onclick="loadFromGid()">Load from Google Sheet</button>
+          <button class="btn" id="syncBtn" style="display:none" onclick="loadFromGid()">↻ Sync latest</button>
+        </div>
+      </div>
+
+      <div class="src-status" id="srcStatus">No data loaded yet — import your XLSX or connect via gid above.</div>
+      <div class="src-row">
+        <button class="btn" onclick="startEmpty()">Start empty</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECORD TRANSACTION -->
+  <section class="sec" id="txform-sec">
+    <div class="sec-hd"><h2>Record a transaction</h2><div class="hr"></div><div class="hint">cost average and capital compute automatically</div></div>
+    <div class="txform" id="txform">
+      <div class="fld" id="stockPickerWrap" style="position:relative">
+        <label for="stockPickBtn">Stock</label>
+        <button type="button" class="stock-pick" id="stockPickBtn" onclick="toggleStockPicker()"></button>
+        <div class="stock-panel" id="stockPanel" style="display:none">
+          <input type="text" class="stock-search" id="stockSearch" placeholder="Search ticker or company…" oninput="renderStockList()" onkeydown="stockSearchKey(event)">
+          <div class="stock-list" id="stockList"></div>
+        </div>
+      </div>
+      <div class="fld newsym"><label for="txNew">New ticker</label>
+        <input id="txNew" type="text" placeholder="e.g. GLO" maxlength="8" style="text-transform:uppercase"></div>
+      <div class="fld"><label>Type</label>
+        <div class="seg-toggle" id="txSide" data-value="Buy">
+          <button type="button" class="seg-opt buy active" onclick="setTxSide('Buy')">Buy</button>
+          <button type="button" class="seg-opt sell" onclick="setTxSide('Sell')">Sell</button>
+        </div>
+      </div>
+      <div class="fld"><label>Shares</label>
+        <input id="txShares" type="number" min="1" step="1" placeholder="0"></div>
+      <div class="fld"><label>Price / share <span class="af" id="pxAuto"></span></label>
+        <input id="txPrice" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="fld"><label>Date</label>
+        <input id="txDate" type="date"></div>
+      <button class="btn gold" id="txBtn" onclick="addTx()">＋ Record</button>
+    </div>
+    <div class="txmsg" id="txMsg"></div>
+  </section>
+
+  <!-- HOLDINGS -->
+  <section class="sec" id="holdings-sec">
+    <div class="sec-hd"><h2>Holdings</h2><div class="hr"></div><div class="hint">live prices update every 60 s · current price is also editable</div></div>
+    <div class="tbl-wrap">
+      <table id="tbl">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+        <tfoot><tr id="tfoot"></tr></tfoot>
+      </table>
+    </div>
+    <div class="tools">
+      <span class="tmsg" id="tmsg"></span>
+      <span class="sstate" id="sstate"></span>
+    </div>
+  </section>
+
+  <!-- TX LOG -->
+  <section class="sec" id="log-sec">
+    <div class="sec-hd"><h2>Investment log</h2><div class="hr"></div><div class="hint" id="logHint"></div></div>
+    <div class="log-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Stock</th><th>Date</th><th>Type</th><th>Price</th><th>Shares</th><th>Amount</th><th></th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DETAIL -->
+  <section class="det" id="det">
+    <div class="sec-hd"><h2>Stock focus</h2><div class="hr"></div></div>
+    <div class="det-card">
+      <div class="det-hd" id="detHd"></div>
+      <div class="mrow" id="detMet"></div>
+      <div class="stxlog" id="detTx"></div>
+      <div class="nz" id="nz"></div>
+    </div>
+  </section>
+
+  <!-- DIVIDENDS BY YEAR -->
+  <section class="sec" id="dividends-sec">
+    <div class="sec-hd"><h2>Dividend income</h2><div class="hr"></div><div class="hint">by year · from your Dividend Log data</div></div>
+    <div class="divi-grid" id="diviGrid"></div>
+    <div class="src-row" style="margin-top:12px">
+      <input id="newDivYear" type="number" placeholder="Year e.g. 2027" class="aikey-input" style="width:130px">
+      <input id="newDivAmt" type="number" step="0.01" placeholder="Amount ₱" class="aikey-input" style="width:150px">
+      <button class="btn sm" onclick="addDivYear()">＋ Add / update year</button>
+    </div>
+  </section>
+
+  <!-- NET WORTH -->
+  <section class="sec" id="networth-sec">
+    <div class="sec-hd"><h2>Net worth</h2><div class="hr"></div><div class="hint">cash + investments · history builds up day by day from today</div></div>
+    <div class="kpi-grid" id="nwKpis" style="margin-bottom:16px"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">〰</span>Net worth over time</div>
+        <div class="chart-body"><div class="chart-svg-wrap" id="nwLineChart"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">◔</span>Cash vs investments</div>
+        <div class="chart-body"><div class="donut-wrap" id="nwDonutChart"></div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chd"><span class="ic">🧾</span>Snapshot history</div>
+      <div class="log-wrap">
+        <table>
+          <thead><tr><th style="text-align:left">Date</th><th>Cash</th><th>Investment value</th><th>Net worth</th></tr></thead>
+          <tbody id="snapBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIVIDEND CALENDAR -->
+  <section class="sec" id="divcal-sec">
+    <div class="sec-hd"><h2>Dividend calendar</h2><div class="hr"></div><div class="hint">upcoming ex-dividend and payment dates for your current holdings</div></div>
+    <div class="info-box"><b>How to read this:</b> Ex-date and payment date come straight from the dividend tab's own date columns, or from PSE Edge once matched. The dividend rate accepts formats like "₱0.50", "Php5.50" or "0.0005 per share" — click <b>Correct</b> on any card to fix it by hand. If a rate can't be read as a number, the raw value is shown so you can check or correct it.</div>
+    <div class="src-row" style="margin-bottom:14px">
+      <button class="btn gold" id="pseEdgeBtn" onclick="checkPseEdgeDividends()">🔎 Check PSE Edge for my holdings</button>
+      <a class="btn" href="https://edge.pse.com.ph/disclosureData/dividends_and_rights_info_form.do" target="_blank" rel="noopener">Open PSE Edge Dividends List ↗</a>
+    </div>
+    <div class="src-status" id="pseEdgeStatus" style="margin-bottom:16px">Not checked yet — PSE Edge blocks direct browser requests, so this tries a fallback route and may occasionally fail; when it does, use the link above to look it up yourself.</div>
+    <div class="kpi-grid" id="divcalKpi" style="margin-bottom:16px"></div>
+    <div class="divcal-grid" id="divcalGrid"></div>
+  </section>
+
+  <!-- REBALANCE -->
+  <section class="sec" id="rebalance-sec">
+    <div class="sec-hd"><h2>Rebalance</h2><div class="hr"></div><div class="hint">set a target % per stock and get a concrete buy/sell list</div></div>
+    <div class="info-box">Set a target % for any holding below (<b>0</b> clears it). Targets don't need to add up to 100% — set them only for the positions you actively manage. Gaps under roughly <b>₱50</b> (or 0.5% of your portfolio) are treated as "on target" so you're not chasing rounding noise.</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Ticker</th><th>Current %</th><th>Target %</th><th>Current value</th><th>Target value</th><th>Action</th><th>Set target</th></tr></thead>
+        <tbody id="rebalBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="sec" id="expenses-sec">
+    <div class="sec-hd"><h2>Expenses</h2><div class="hr"></div><div class="hint">one-time and recurring expenses</div><div class="acts"><button class="btn gold" onclick="toggleExpForm()">＋ Log expense</button></div></div>
+    <div class="form-card" id="expForm">
+      <div class="frow">
+        <div class="fld"><label>Date</label><input type="date" id="expDate"></div>
+        <div class="fld"><label>Category</label><select id="expCat">
+          <option>Food</option><option>Transport</option><option>Utilities</option><option>Rent</option>
+          <option>Shopping</option><option>Health</option><option>Entertainment</option><option>Other</option>
+        </select></div>
+        <div class="fld"><label>Description</label><input type="text" id="expDesc" placeholder="e.g. Groceries"></div>
+        <div class="fld"><label>Amount ₱</label><input type="number" step="0.01" min="0" id="expAmt" placeholder="0.00"></div>
+        <div class="chk-fld"><input type="checkbox" id="expRec"><label for="expRec">Recurring</label></div>
+        <button class="btn gold" onclick="addExpense()">＋ Add</button>
+      </div>
+      <div class="fld" style="margin-top:10px"><label>Notes (optional)</label><input type="text" id="expNotes" placeholder="optional note" style="width:100%"></div>
+    </div>
+    <div class="kpi-grid" id="expKpis" style="margin-bottom:16px"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">◔</span>Expenses by category</div>
+        <div class="chart-body"><div class="donut-wrap" id="expDonut"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">↻</span>Recurring bills</div>
+        <div class="chart-body" id="recurringBills"></div>
+      </div>
+    </div>
+    <div class="filter-row"><input class="search-input" id="expSearch" placeholder="Search…" oninput="renderExpenseTable()"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Recurring</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="expBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CASH FLOW -->
+  <section class="sec" id="cashflow-sec">
+    <div class="sec-hd"><h2>Cash flow</h2><div class="hr"></div><div class="hint">current cash balance and monthly income vs. expense trends</div>
+      <div class="acts">
+        <button class="btn" onclick="exportCashFlowCSV()">⬇ CSV</button>
+        <button class="btn gold" onclick="toggleIncForm()">＋ Log income</button>
+        <button class="btn" style="background:var(--down);border-color:var(--down);color:#fff" onclick="toggleExpForm()">＋ Log expense</button>
+      </div>
+    </div>
+    <div class="form-card" id="incForm">
+      <div class="frow">
+        <div class="fld"><label>Date</label><input type="date" id="incDate"></div>
+        <div class="fld"><label>Category</label><input type="text" id="incCat" placeholder="e.g. Salary"></div>
+        <div class="fld"><label>Description</label><input type="text" id="incDesc" placeholder="e.g. Payroll"></div>
+        <div class="fld"><label>Amount ₱</label><input type="number" step="0.01" min="0" id="incAmt" placeholder="0.00"></div>
+        <div class="chk-fld"><input type="checkbox" id="incRec"><label for="incRec">Recurring</label></div>
+        <button class="btn gold" onclick="addIncome()">＋ Add</button>
+      </div>
+    </div>
+    <div class="kpi-grid" id="cfKpis" style="margin-bottom:16px"></div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chd"><span class="ic">▤</span>Monthly income vs expenses</div>
+      <div class="chart-body"><div class="chart-svg-wrap" id="cfChart"></div></div>
+    </div>
+    <div class="filter-row">
+      <input class="search-input" id="cfSearch" placeholder="Search…" oninput="renderCashFlowLog()">
+      <select class="sel" id="cfTypeFilter" onchange="renderCashFlowLog()"><option value="">All types</option><option value="income">Income</option><option value="expense">Expense</option></select>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="text-align:left">Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th>Recurring</th><th></th></tr></thead>
+        <tbody id="cfBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ANNUAL REPORT -->
+  <section class="sec" id="report-sec">
+    <div class="sec-hd"><h2>Annual performance report</h2><div class="hr"></div>
+      <div class="acts">
+        <select class="sel" id="reportYear" onchange="renderReport()"></select>
+        <button class="btn prim" onclick="renderReport()">🔍 Generate</button>
+        <button class="btn" onclick="window.print()">🖶 Print / Save PDF</button>
+      </div>
+    </div>
+    <div id="reportBody"></div>
+  </section>
+
+  <!-- AI SETUP -->
+  <section class="sec" id="ai-sec">
+    <div class="sec-hd"><h2>AI setup</h2><div class="hr"></div><div class="hint">optional · powers news lookup &amp; new-ticker pricing</div></div>
+    <div class="src-card">
+      <p>Paste an Anthropic API key to enable <b>Get live news</b> in Stock focus and automatic price lookup when adding a new ticker. Get one at <b>console.anthropic.com → API keys</b> — saved only on this device.</p>
+      <div class="src-row">
+        <input id="apiKey" class="aikey-input" type="password" placeholder="sk-ant-…" autocomplete="off">
+        <button class="btn gold" onclick="testAI()">Test AI</button>
+        <span class="aistat" id="aistat"></span>
+      </div>
+    </div>
+  </section>
+
+  <footer>Holdings computed live from the investment log · data stays on your device · not financial advice</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ── COLORS ──────────────────────────────────────────────────────────── */
+// Categorical palette — validated adjacent-pair CVD/contrast safe (see dataviz skill).
+const PALETTE=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948','#0f9b8e','#b45309','#6366f1','#db2777'];
+let BRAND={AREIT:'#2a78d6',MREIT:'#eb6834',MWC:'#1baf7a',CREIT:'#eda100',DMC:'#e87ba4',LTG:'#008300',SCC:'#4a3aa7',RCR:'#e34948',TEL:'#0f9b8e'};
+let COMPANY={AREIT:'AyalaLand REIT',MREIT:'Megaworld REIT',CREIT:'Citicore Energy REIT',RCR:'RL Commercial REIT',DMC:'DMCI Holdings',LTG:'LT Group',MWC:'Manila Water',SCC:'Semirara Mining & Power',TEL:'PLDT Inc.'};
+let SECTOR={AREIT:'REIT · Office',MREIT:'REIT · Office',CREIT:'REIT · Renewable',RCR:'REIT · Commercial',DMC:'Conglomerate',LTG:'Conglomerate',MWC:'Utilities · Water',SCC:'Mining & Power',TEL:'Telecom'};
+const colorFor=s=>BRAND[s]||(BRAND[s]=PALETTE[Object.keys(BRAND).length%PALETTE.length]);
+const coName=s=>COMPANY[s]||s;
+const secName=s=>SECTOR[s]||'PSE Listed';
+
+/* ── STATE ───────────────────────────────────────────────────────────── */
+let txs=[];
+let nextId=1;
+let prices={};
+let dividendsByYear={};
+let dividendsByStock={};
+const totalDividends=()=>Object.values(dividendsByYear).reduce((a,b)=>a+b,0);
+let dayChg={};
+let sortKey=null,sortDir=1,activeSym=null;
+let txSym='',stockPanelOpen=false;
+let liveOk=null,liveTs=0;
+let autoLive=true,liveBusy=false,liveTimer=null;
+let savedGidConfig=null;
+let cash=0;
+let snapshots=[];
+let divCalendar={};
+let targets={};
+let expenses=[];
+let income=[];
+let nextExpId=1,nextIncId=1;
+const EXP_CATS=['Food','Transport','Utilities','Rent','Shopping','Health','Entertainment','Other'];
+const newsCache={};
+const defaultDivGidRows=()=>{const y=new Date().getFullYear();return[{year:String(y),gid:''},{year:String(y+1),gid:''}];};
+let divGidRows=defaultDivGidRows();
+
+/* ── AUTO-SAVE ───────────────────────────────────────────────────────── */
+const SK='pse-v3',KK='pse-apikey';
+const LS=(()=>{try{const k='_t'+Date.now();localStorage.setItem(k,'1');localStorage.removeItem(k);return localStorage;}catch{return null;}})();
+function save(){
+  if(!LS)return;
+  try{
+    LS.setItem(SK,JSON.stringify({txs,prices,dividendsByYear,dividendsByStock,nextId,autoLive,gid:savedGidConfig,cash,snapshots,
+      divCalendar,targets,expenses,income,nextExpId,nextIncId,
+      meta:{brand:BRAND,company:COMPANY,sector:SECTOR}}));
+    const e=document.getElementById('sstate');
+    if(e)e.textContent='saved '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }catch{}
+}
+function load(){
+  if(!LS)return false;
+  try{
+    const r=JSON.parse(LS.getItem(SK)||'{}');
+    const hasData=(Array.isArray(r.txs)&&r.txs.length)||(Array.isArray(r.expenses)&&r.expenses.length)||
+      (Array.isArray(r.income)&&r.income.length)||(Array.isArray(r.snapshots)&&r.snapshots.length)||
+      (typeof r.cash==='number'&&r.cash>0)||(r.divCalendar&&Object.keys(r.divCalendar).length)||
+      (r.targets&&Object.keys(r.targets).length);
+    if(!hasData)return false;
+    if(Array.isArray(r.txs)){txs=r.txs;nextId=r.nextId||txs.reduce((m,t)=>Math.max(m,t.id||0),0)+1;}
+    if(r.prices)prices=r.prices;
+    if(r.dividendsByYear&&typeof r.dividendsByYear==='object')dividendsByYear=r.dividendsByYear;
+    else if(typeof r.dividends==='number')dividendsByYear={Total:r.dividends};
+    if(r.dividendsByStock&&typeof r.dividendsByStock==='object')dividendsByStock=r.dividendsByStock;
+    if(typeof r.autoLive==='boolean')autoLive=r.autoLive;
+    if(r.gid)savedGidConfig=r.gid;
+    if(typeof r.cash==='number')cash=r.cash;
+    if(Array.isArray(r.snapshots))snapshots=r.snapshots;
+    if(r.divCalendar&&typeof r.divCalendar==='object')divCalendar=r.divCalendar;
+    if(r.targets&&typeof r.targets==='object')targets=r.targets;
+    if(Array.isArray(r.expenses))expenses=r.expenses;
+    if(Array.isArray(r.income))income=r.income;
+    if(typeof r.nextExpId==='number')nextExpId=r.nextExpId;
+    if(typeof r.nextIncId==='number')nextIncId=r.nextIncId;
+    if(r.meta){Object.assign(BRAND,r.meta.brand||{});Object.assign(COMPANY,r.meta.company||{});Object.assign(SECTOR,r.meta.sector||{});}
+    return true;
+  }catch{return false;}
+}
+
+/* ── MATH ────────────────────────────────────────────────────────────── */
+const php=n=>'₱'+Math.abs(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sphp=n=>(n<0?'-':'')+php(n);
+const pct=n=>(n>0?'+':'')+n.toFixed(2)+'%';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=s=>{const t=String(s||'').replace(/₱|,|\s|%/g,'').replace(/^\((.*)\)$/,'-$1');return parseFloat(t);};
+
+function computeHoldings(){
+  const sorted=[...txs].sort((a,b)=>a.d===b.d?(a.id||0)-(b.id||0):(a.d<b.d?-1:1));
+  const H={};let realized=0;
+  for(const tx of sorted){
+    const h=H[tx.sym]||(H[tx.sym]={sym:tx.sym,shares:0,capital:0});
+    const amt=tx.a!=null?tx.a:tx.p*tx.n;
+    if(tx.t==='Buy'){h.shares+=tx.n;h.capital+=amt;}
+    else{const avg=h.shares>0?h.capital/h.shares:0;const sold=Math.min(tx.n,h.shares);h.capital-=sold*avg;h.shares-=sold;realized+=sold*(tx.p-avg);}
+  }
+  const rows=Object.values(H).filter(h=>h.shares>0).map(h=>{
+    const cost=h.capital/h.shares;
+    const price=prices[h.sym]!=null?prices[h.sym]:cost;
+    const value=h.shares*price;const pl=value-h.capital;
+    return{...h,cost,price,value,pl,plPct:h.capital?pl/h.capital*100:0,signal:price<cost?'BUY':'DON\'T BUY'};
+  });
+  return{rows,realized};
+}
+function totals(){
+  const{rows:d,realized}=computeHoldings();
+  const cap=d.reduce((a,r)=>a+r.capital,0),val=d.reduce((a,r)=>a+r.value,0),pl=val-cap;
+  const dividends=totalDividends();
+  return{d,realized,cap,val,pl,dividends,growth:cap?pl/cap*100:0,net:pl+dividends+realized};
+}
+const holding=s=>computeHoldings().rows.find(r=>r.sym===s);
+const activeSyms=()=>computeHoldings().rows.map(r=>r.sym);
+
+/* ── CLOSED TRADES / WIN RATE (derived from the tx log, no extra data needed) ── */
+function computeClosedTrades(){
+  const sorted=[...txs].sort((a,b)=>a.d===b.d?(a.id||0)-(b.id||0):(a.d<b.d?-1:1));
+  const H={};const closed=[];
+  for(const tx of sorted){
+    const h=H[tx.sym]||(H[tx.sym]={shares:0,capital:0});
+    const amt=tx.a!=null?tx.a:tx.p*tx.n;
+    if(tx.t==='Buy'){h.shares+=tx.n;h.capital+=amt;}
+    else{
+      const avg=h.shares>0?h.capital/h.shares:0;
+      const sold=Math.min(tx.n,h.shares);
+      const cost=sold*avg,proceeds=sold*tx.p,gain=proceeds-cost;
+      closed.push({sym:tx.sym,d:tx.d,shares:sold,proceeds,cost,gain,retPct:cost?gain/cost*100:0});
+      h.capital-=cost;h.shares-=sold;
+    }
+  }
+  return closed.sort((a,b)=>a.d<b.d?1:(a.d>b.d?-1:0));
+}
+function computeWinRate(){
+  const open=computeHoldings().rows,closed=computeClosedTrades();
+  const openWins=open.filter(r=>r.pl>=0).length,closedWins=closed.filter(c=>c.gain>=0).length;
+  const mk=(wins,total)=>({wins,total,pct:total?wins/total*100:0});
+  return{open:mk(openWins,open.length),closed:mk(closedWins,closed.length),combined:mk(openWins+closedWins,open.length+closed.length)};
+}
+
+/* ── NET WORTH SNAPSHOTS ─────────────────────────────────────────────── */
+function logSnapshot(){
+  const today=new Date().toISOString().slice(0,10);
+  const invValue=totals().val,netWorth=cash+invValue;
+  const entry={date:today,cash,invValue,netWorth};
+  if(snapshots.length&&snapshots[snapshots.length-1].date===today)snapshots[snapshots.length-1]=entry;
+  else snapshots.push(entry);
+  if(snapshots.length>400)snapshots=snapshots.slice(-400);
+}
+
+/* ── LIVE PRICES (phisix) ────────────────────────────────────────────── */
+// phisix-api.appspot.com and phisix-api4.appspot.com are retired (always 503, no CORS headers
+// on the error page — the browser reports that as a CORS failure, which is just noise from a
+// dead host). Only api2/api3 are live; response shape is
+// {stocks:[{symbol,price:{amount},percentChange,...}],as_of}.
+const ENDPOINTS=['https://phisix-api2.appspot.com/stocks.json','https://phisix-api3.appspot.com/stocks.json'];
+
+async function fetchPhisix(){
+  // Try all endpoints in parallel, use whichever responds first with valid data
+  return new Promise((resolve,reject)=>{
+    let done=false,errors=0;
+    for(const url of ENDPOINTS){
+      fetch(url,{cache:'no-store'})
+        .then(r=>{if(!r.ok)throw new Error('HTTP'+r.status);return r.json();})
+        .then(j=>{
+          if(done)return;
+          if(!j||!Array.isArray(j.stocks)||!j.stocks.length)throw new Error('empty');
+          done=true;resolve(j);
+        })
+        .catch(()=>{
+          errors++;
+          if(errors===ENDPOINTS.length&&!done)reject(new Error('all endpoints failed'));
+        });
+    }
+  });
+}
+
+function setChip(state,txt){
+  const c=document.getElementById('liveChip'),t=document.getElementById('liveText'),d=document.getElementById('liveDot');
+  if(!c||!t)return;
+  c.className='hchip '+state;
+  t.textContent=txt;
+  if(d)d.className='live-dot '+state;
+}
+
+// PSE regular trading session: Mon–Fri, 9:30–15:30 Asia/Manila, continuous (no lunch break)
+function pseMarketOpen(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',hour12:false,weekday:'short',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date());
+  const get=t=>parts.find(p=>p.type===t)?.value;
+  const day=get('weekday');
+  if(day==='Sat'||day==='Sun')return false;
+  const mins=(+get('hour'))*60+(+get('minute'));
+  return mins>=9*60+30&&mins<15*60+30;
+}
+
+let renderPending=false;
+function safeRender(){
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA')){
+    if(!renderPending){renderPending=true;setTimeout(()=>{renderPending=false;renderAll();if(activeSym)renderDetail(activeSym);},3000);}
+    return;
+  }
+  renderAll();if(activeSym)renderDetail(activeSym);
+}
+
+async function doLive(manual){
+  if(liveBusy)return;
+  const syms=activeSyms();
+  if(!syms.length){if(manual)tMsg('No holdings yet.',true);return;}
+  liveBusy=true;
+  const btn=document.getElementById('liveBtn');
+  if(btn)btn.disabled=true;
+  setChip('fetching','fetching live prices…');
+  try{
+    const j=await fetchPhisix();
+    const map={},chg={};
+    for(const s of j.stocks){if(s&&s.symbol){map[s.symbol]=s.price?.amount;chg[s.symbol]=s.percentChange;}}
+    let updated=0;
+    for(const sym of syms){
+      const p=parseFloat(map[sym]);
+      if(!isNaN(p)&&p>0){prices[sym]=p;dayChg[sym]=parseFloat(chg[sym])||0;updated++;}
+    }
+    liveOk=true;liveTs=Date.now();
+    const when=new Date(liveTs).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Manila'});
+    const open=pseMarketOpen();
+    setChip(open?'live':'closed',`${open?'live PSE · market open':'market closed · last close'} · ${updated}/${syms.length} priced · as of ${when}`);
+    safeRender();
+    if(manual)tMsg(`✓ ${updated}/${syms.length} prices updated from PSE live feed.`,false);
+  }catch(e){
+    liveOk=false;
+    setChip('fail','live feed unavailable — edit prices manually or use AI lookup');
+    if(manual)tMsg('Live feed temporarily unavailable. Edit a price directly in the table, or use "AI price lookup" below.',true);
+  }finally{
+    liveBusy=false;
+    if(btn)btn.disabled=false;
+  }
+}
+
+function startLiveLoop(){
+  if(liveTimer)clearInterval(liveTimer);
+  doLive(false);
+  liveTimer=setInterval(()=>{if(autoLive&&!document.hidden&&pseMarketOpen())doLive(false);},60000);
+  document.removeEventListener('visibilitychange',onVis);
+  if(document.addEventListener) document.addEventListener('visibilitychange',onVis);
+}
+function onVis(){if(!document.hidden&&autoLive&&pseMarketOpen()&&Date.now()-liveTs>55000)doLive(false);}
+
+/* ── RENDERS ─────────────────────────────────────────────────────────── */
+function renderStats(){
+  const t=totals();
+  const s=[
+    {l:'Total capital',v:php(t.cap),ic:'💵',ec:'c1'},
+    {l:'Current value',v:php(t.val),ic:'📦',ec:'c1'},
+    {l:'Unrealized P/L',v:sphp(t.pl),c:t.pl>=0?'up':'down',ic:'📈',ec:t.pl>=0?'c2':'c5',n:pct(t.growth)},
+    {l:'Realized gains',v:sphp(t.realized),c:t.realized>=0?'up':'down',ic:'✅',ec:t.realized>=0?'c2':'c5',n:'from sells'},
+    {l:'Dividends',v:php(t.dividends),c:'up',ic:'🪙',ec:'c3',n:t.cap?'yield '+(t.dividends/t.cap*100).toFixed(2)+'%':undefined},
+    {l:'Net all-in',v:sphp(t.net),c:t.net>=0?'up':'down',ic:'∑',ec:'c4',n:'paper+realized+div'}
+  ];
+  document.getElementById('kpis').innerHTML=s.map(x=>`<div class="kpi-card"><div class="top"><div class="lbl">${x.l}</div><div class="ic ${x.ec}">${x.ic}</div></div><div class="val ${x.c||''}">${x.v}</div>${x.n?`<div class="note">${x.n}</div>`:''}</div>`).join('');
+  const asOf=document.getElementById('asOf');
+  if(asOf)asOf.textContent=txs.length+' transactions · '+new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
+  const sideVal=document.getElementById('sideVal');
+  if(sideVal)sideVal.textContent=php(t.val);
+}
+function renderRibbon(){
+  const t=totals();
+  const ribbon=document.getElementById('ribbon');
+  if(!t.d.length){ribbon.innerHTML='<div style="padding:18px;color:var(--muted);font-size:13px">No holdings yet.</div>';document.getElementById('lgnd').innerHTML='';return;}
+  const sorted=[...t.d].sort((a,b)=>b.capital-a.capital);
+  ribbon.innerHTML=sorted.map(r=>{
+    const w=t.cap?r.capital/t.cap*100:0;
+    const label=w>=4?`<span class="s">${r.sym}</span><span class="p">${w.toFixed(1)}%</span>`:'';
+    return`<div class="seg" style="flex-grow:${w.toFixed(3)};background:${colorFor(r.sym)}" onclick="openDetail('${r.sym}')" title="${r.sym} · ${esc(coName(r.sym))} · ${w.toFixed(1)}% of capital (${php(r.capital)}) · ${sphp(r.pl)} ${r.pl>=0?'gain':'loss'}">
+      <span class="pd" style="background:${r.pl>=0?'#7DFFC4':'#FFB3BE'}"></span>
+      ${label}</div>`;
+  }).join('');
+  document.getElementById('lgnd').innerHTML=sorted.map(r=>{
+    const w=t.cap?r.capital/t.cap*100:0;
+    return`<span class="chip" onclick="openDetail('${r.sym}')"><span class="sw" style="background:${colorFor(r.sym)}"></span><b>${r.sym}</b> ${w.toFixed(1)}% <span class="amt">${php(r.capital)}</span></span>`;
+  }).join('');
+}
+
+/* ── DASHBOARD CHARTS (sector donut · top holdings bar · cumulative line) ── */
+let SECTOR_COLOR={};
+const sectorColorFor=s=>SECTOR_COLOR[s]||(SECTOR_COLOR[s]=PALETTE[Object.keys(SECTOR_COLOR).length%PALETTE.length]);
+function fmtCompact(n){
+  const a=Math.abs(n);
+  if(a>=1e6)return(n/1e6).toFixed(a>=1e7?0:1)+'M';
+  if(a>=1e3)return(n/1e3).toFixed(a>=1e4?0:1)+'k';
+  return n.toFixed(0);
+}
+function renderDonut(){
+  const el=document.getElementById('donutChart');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="chart-empty">No holdings yet.</div>';return;}
+  const bySector={};
+  for(const r of t.d)bySector[secName(r.sym)]=(bySector[secName(r.sym)]||0)+r.value;
+  const total=Object.values(bySector).reduce((a,b)=>a+b,0);
+  const entries=Object.entries(bySector).sort((a,b)=>b[1]-a[1]);
+  const R=68,CX=90,CY=90,CIRC=2*Math.PI*R;
+  let offset=0;
+  const arcs=entries.map(([name,val])=>{
+    const frac=total?val/total:0;
+    const dash=frac*CIRC;
+    const seg=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke-width="26" transform="rotate(-90 ${CX} ${CY})" style="stroke:${sectorColorFor(name)}" stroke-dasharray="${dash.toFixed(2)} ${(CIRC-dash).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"><title>${esc(name)} · ${(total?frac*100:0).toFixed(1)}%</title></circle>`;
+    offset+=dash;
+    return seg;
+  }).join('');
+  const svg=`<svg class="donut-svg" viewBox="0 0 180 180">${arcs}
+    <text x="${CX}" y="${CY-6}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--sans)">Total</text>
+    <text x="${CX}" y="${CY+14}" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700;font-family:var(--mono)">₱${fmtCompact(total)}</text>
+  </svg>`;
+  const legend=entries.map(([name,val])=>`<span class="li"><span class="sw" style="background:${sectorColorFor(name)}"></span>${esc(name)} <b>${(total?val/total*100:0).toFixed(1)}%</b></span>`).join('');
+  el.innerHTML=`${svg}<div class="donut-legend">${legend}</div>`;
+}
+function renderBarChart(){
+  const el=document.getElementById('barChart');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="chart-empty">No holdings yet.</div>';return;}
+  const top=[...t.d].sort((a,b)=>b.value-a.value).slice(0,10);
+  const max=Math.max(...top.map(r=>r.value),1);
+  const W=560,H=220,padL=46,padB=26,padT=10,padR=8;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=top.length;
+  const slot=plotW/n,gap=slot*0.3,bw=slot-gap;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=padT+plotH-f*plotH;
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=top.map((r,i)=>{
+    const x=padL+i*slot+gap/2,h=max?(r.value/max)*plotH:0,y=padT+plotH-h;
+    return`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3" style="fill:${colorFor(r.sym)}"><title>${r.sym} · ${php(r.value)}</title></rect>
+    <text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:9.5px;font-family:var(--mono);font-weight:600">${r.sym}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}${bars}</svg>`;
+}
+function renderLineChart(){
+  const el=document.getElementById('lineChart');if(!el)return;
+  if(!txs.length){el.innerHTML='<div class="chart-empty">No transactions yet.</div>';return;}
+  const sorted=[...txs].sort((a,b)=>a.d===b.d?(a.id||0)-(b.id||0):(a.d<b.d?-1:1));
+  const H={};const rawPoints=[];
+  for(const tx of sorted){
+    const h=H[tx.sym]||(H[tx.sym]={shares:0,capital:0});
+    const amt=tx.a!=null?tx.a:tx.p*tx.n;
+    if(tx.t==='Buy'){h.shares+=tx.n;h.capital+=amt;}
+    else{const avg=h.shares>0?h.capital/h.shares:0;const sold=Math.min(tx.n,h.shares);h.capital-=sold*avg;h.shares-=sold;}
+    rawPoints.push({d:tx.d,v:Object.values(H).reduce((a,x)=>a+x.capital,0)});
+  }
+  const byDate=[];
+  for(const p of rawPoints){
+    if(byDate.length&&byDate[byDate.length-1].d===p.d)byDate[byDate.length-1].v=p.v;
+    else byDate.push({...p});
+  }
+  const max=Math.max(...byDate.map(p=>p.v),1),n=byDate.length;
+  const W=1000,H2=240,padL=56,padB=28,padT=14,padR=14;
+  const plotW=W-padL-padR,plotH=H2-padT-padB;
+  const px=i=>padL+(n<=1?plotW/2:i/(n-1)*plotW);
+  const py=v=>padT+plotH-(v/max)*plotH;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=py(v);
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:10px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const path=byDate.map((p,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(p.v).toFixed(1)}`).join(' ');
+  const area=`${path} L${px(n-1).toFixed(1)},${(padT+plotH).toFixed(1)} L${px(0).toFixed(1)},${(padT+plotH).toFixed(1)} Z`;
+  const dots=byDate.map((p,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(p.v).toFixed(1)}" r="3.5" style="fill:var(--accent2);stroke:var(--card)" stroke-width="1.5"><title>${esc(p.d)} · ${php(p.v)}</title></circle>`).join('');
+  const tickIdx=n<=5?byDate.map((_,i)=>i):[0,Math.round((n-1)*0.25),Math.round((n-1)*0.5),Math.round((n-1)*0.75),n-1];
+  const seen=new Set();
+  const labels=tickIdx.filter(i=>{if(seen.has(i))return false;seen.add(i);return true;}).map(i=>{
+    const dt=new Date(byDate[i].d);
+    const lbl=isNaN(dt)?byDate[i].d:dt.toLocaleDateString('en-PH',{month:'short',year:'numeric'});
+    return`<text x="${px(i).toFixed(1)}" y="${H2-8}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--mono)">${esc(lbl)}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H2}">
+    <defs><linearGradient id="lineFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" style="stop-color:var(--accent);stop-opacity:.35"></stop>
+      <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0"></stop>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" style="fill:url(#lineFade);stroke:none"></path>
+    <path d="${path}" style="fill:none;stroke:var(--accent2)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+    ${dots}${labels}
+  </svg>`;
+}
+/* ── PERFORMANCE TAB ─────────────────────────────────────────────────── */
+function renderGLChart(){
+  const el=document.getElementById('glChart');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="chart-empty">No holdings yet.</div>';return;}
+  const rows=[...t.d].sort((a,b)=>a.pl-b.pl);
+  const maxAbs=Math.max(...rows.map(r=>Math.abs(r.pl)),1);
+  const W=700,H=260,padL=54,padR=10,padT=16,padB=26;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=rows.length,zero=padT+plotH/2;
+  const slot=plotW/n,gap=slot*0.32,bw=slot-gap;
+  const grid=[-1,-0.5,0,0.5,1].map(f=>{
+    const v=f*maxAbs,gy=zero-f*(plotH/2);
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=rows.map((r,i)=>{
+    const x=padL+i*slot+gap/2,h=maxAbs?Math.abs(r.pl)/maxAbs*(plotH/2):0,y=r.pl>=0?zero-h:zero;
+    return`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="3" style="fill:${r.pl>=0?'var(--up)':'var(--down)'}"><title>${r.sym} · ${sphp(r.pl)}</title></rect>
+    <text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:9.5px;font-family:var(--mono);font-weight:600">${r.sym}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}<line x1="${padL}" y1="${zero.toFixed(1)}" x2="${W-padR}" y2="${zero.toFixed(1)}" style="stroke:var(--line2)" stroke-width="1"></line>${bars}</svg>`;
+}
+function renderCostVsMarket(){
+  const el=document.getElementById('cbmvChart');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="chart-empty">No holdings yet.</div>';return;}
+  const rows=[...t.d].sort((a,b)=>b.capital-a.capital);
+  const max=Math.max(...rows.map(r=>Math.max(r.capital,r.value)),1);
+  const W=560,H=220,padL=46,padB=26,padT=10,padR=8;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=rows.length;
+  const slot=plotW/n,gap=slot*0.24,groupW=slot-gap,bw=groupW/2-2;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=padT+plotH-f*plotH;
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=rows.map((r,i)=>{
+    const gx=padL+i*slot+gap/2;
+    const h1=max?(r.capital/max)*plotH:0,y1=padT+plotH-h1;
+    const h2=max?(r.value/max)*plotH:0,y2=padT+plotH-h2;
+    return`<rect x="${gx.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h1.toFixed(1)}" rx="2" style="fill:var(--indigo)"><title>${r.sym} cost basis · ${php(r.capital)}</title></rect>
+    <rect x="${(gx+bw+3).toFixed(1)}" y="${y2.toFixed(1)}" width="${bw.toFixed(1)}" height="${h2.toFixed(1)}" rx="2" style="fill:var(--accent2)"><title>${r.sym} market value · ${php(r.value)}</title></rect>
+    <text x="${(gx+groupW/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:9px;font-family:var(--mono);font-weight:600">${r.sym}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}${bars}</svg><div class="chart-legend"><span class="li"><span class="sw" style="background:var(--indigo)"></span>Cost basis</span><span class="li"><span class="sw" style="background:var(--accent2)"></span>Market value</span></div>`;
+}
+function renderDivByStock(){
+  const el=document.getElementById('divStockChart');if(!el)return;
+  const entries=Object.entries(dividendsByStock).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){el.innerHTML='<div class="chart-empty">No per-stock dividend data yet — import a Dividend Log with a ticker column (XLSX or Google Sheet) to see this breakdown.</div>';return;}
+  const max=Math.max(...entries.map(e=>e[1]),1);
+  const W=560,H=220,padL=54,padB=26,padT=10,padR=8;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=entries.length;
+  const slot=plotW/n,gap=slot*0.3,bw=slot-gap;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=padT+plotH-f*plotH;
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=entries.map(([sym,v],i)=>{
+    const x=padL+i*slot+gap/2,h=max?(v/max)*plotH:0,y=padT+plotH-h;
+    return`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="3" style="fill:var(--gold)"><title>${sym} · ${php(v)}</title></rect>
+    <text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:9.5px;font-family:var(--mono);font-weight:600">${sym}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}${bars}</svg>`;
+}
+function renderReturnRank(){
+  const el=document.getElementById('returnRank');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="chart-empty">No holdings yet.</div>';return;}
+  const rows=[...t.d].sort((a,b)=>b.plPct-a.plPct);
+  const maxAbs=Math.max(...rows.map(r=>Math.abs(r.plPct)),1);
+  el.innerHTML=rows.map(r=>{
+    const w=Math.abs(r.plPct)/maxAbs*100,dir=r.plPct>=0?'up':'down';
+    return`<div class="rank-row" onclick="openDetail('${r.sym}')" style="cursor:pointer">
+      <span class="rk-lbl">${r.sym}</span>
+      <span class="rk-track"><span class="rk-fill" style="left:0;width:${w.toFixed(1)}%;background:${r.plPct>=0?'var(--up)':'var(--down)'}"></span></span>
+      <span class="rk-val ${dir}">${pct(r.plPct)}</span>
+    </div>`;
+  }).join('');
+}
+function renderPerformance(){renderGLChart();renderCostVsMarket();renderDivByStock();renderReturnRank();}
+
+/* ── INSIGHTS TAB ────────────────────────────────────────────────────── */
+function renderRUChart(){
+  const el=document.getElementById('ruChart');if(!el)return;
+  const t=totals();
+  const cats=[{l:'Realized P&L',v:t.realized},{l:'Unrealized P&L',v:t.pl},{l:'Dividends',v:t.dividends}];
+  const maxAbs=Math.max(...cats.map(c=>Math.abs(c.v)),1);
+  const W=560,H=230,padL=54,padR=10,padT=16,padB=30;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=cats.length,zero=padT+plotH/2;
+  const slot=plotW/n,gap=slot*0.32,bw=slot-gap;
+  const grid=[-1,-0.5,0,0.5,1].map(f=>{
+    const v=f*maxAbs,gy=zero-f*(plotH/2);
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=cats.map((c,i)=>{
+    const x=padL+i*slot+gap/2,h=maxAbs?Math.abs(c.v)/maxAbs*(plotH/2):0,y=c.v>=0?zero-h:zero;
+    const labelY=c.v>=0?y+16:y+h-8;
+    return`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="4" style="fill:${c.v>=0?'var(--up)':'var(--down)'}"></rect>
+    ${h>26?`<text x="${(x+bw/2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:800;font-family:var(--mono)">${sphp(c.v)}</text>`:''}
+    <text x="${(x+bw/2).toFixed(1)}" y="${H-10}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--sans);font-weight:600">${c.l}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}<line x1="${padL}" y1="${zero.toFixed(1)}" x2="${W-padR}" y2="${zero.toFixed(1)}" style="stroke:var(--line2)" stroke-width="1"></line>${bars}</svg>`;
+}
+function renderWinRateBody(){
+  const el=document.getElementById('winRateBody');if(!el)return;
+  const w=computeWinRate();
+  const block=(label,d)=>`<div class="prog-block">
+    <div class="prog-hd"><span>${label}</span><span class="pct">${d.total?d.pct.toFixed(0)+'%':'—'}</span></div>
+    <div class="prog-track"><div class="prog-fill" style="width:${d.total?d.pct.toFixed(1):0}%;background:${!d.total?'var(--muted)':d.pct>=50?'var(--up)':'var(--down)'}"></div></div>
+    <div class="prog-note">${d.total?d.wins+' of '+d.total:'not enough data yet'}</div>
+  </div>`;
+  el.innerHTML=block('Open positions',w.open)+block('Closed trades',w.closed)+block('Combined (all-time)',w.combined);
+}
+function findSnapshotNear(daysAgo){
+  const target=new Date();target.setDate(target.getDate()-daysAgo);
+  const targetStr=target.toISOString().slice(0,10);
+  let best=null;
+  for(const s of snapshots){if(s.date<=targetStr&&(!best||s.date>best.date))best=s;}
+  return best;
+}
+function renderDrawdownBody(){
+  const el=document.getElementById('drawdownBody');if(!el)return;
+  const t=totals(),cur=cash+t.val;
+  if(snapshots.length<2){
+    el.innerHTML=`<div class="stat-mini"><div><div class="sm-lbl">Current net worth</div><div class="sm-val">${php(cur)}</div></div></div><div class="prog-note">Not enough history yet — check back after a few days of tracking.</div>`;
+    return;
+  }
+  let peak=-Infinity,peakDate='',maxDD=0;
+  for(const s of snapshots){
+    if(s.netWorth>peak){peak=s.netWorth;peakDate=s.date;}
+    const dd=peak?((s.netWorth-peak)/peak*100):0;
+    if(dd<maxDD)maxDD=dd;
+  }
+  if(cur>peak){peak=cur;peakDate=new Date().toISOString().slice(0,10);}
+  const curDD=peak?((cur-peak)/peak*100):0;
+  if(curDD<maxDD)maxDD=curDD;
+  el.innerHTML=`
+    <div class="stat-mini">
+      <div><div class="sm-lbl">Current drawdown</div><div class="sm-val" style="color:${curDD<0?'var(--down)':'var(--up)'}">${curDD.toFixed(2)}%</div></div>
+      <div style="text-align:right"><div class="sm-lbl">Max drawdown</div><div class="sm-val" style="color:var(--down)">${maxDD.toFixed(2)}%</div></div>
+    </div>
+    <div class="mini-row"><span class="mr-lbl">Peak net worth</span><span class="mr-val">${php(peak)} (${esc(new Date(peakDate).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}))})</span></div>
+    <div class="mini-row"><span class="mr-lbl">Current net worth</span><span class="mr-val">${php(cur)}</span></div>`;
+}
+function renderChangeBody(){
+  const el=document.getElementById('changeBody');if(!el)return;
+  const t=totals(),cur=cash+t.val;
+  const row=(label,snap)=>{
+    if(!snap)return`<div class="mini-row"><span class="mr-lbl">${label}</span><span class="mr-val" style="color:var(--muted)">Not enough history yet</span></div>`;
+    const diff=cur-snap.netWorth,pctv=snap.netWorth?diff/snap.netWorth*100:0;
+    return`<div class="mini-row"><span class="mr-lbl">${label} <span style="font-size:10px;color:var(--muted)">vs ${esc(new Date(snap.date).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}))}</span></span><span class="mr-val" style="color:${diff>=0?'var(--up)':'var(--down)'}">${pct(pctv)} (${sphp(diff)})</span></div>`;
+  };
+  el.innerHTML=row('Since last week',findSnapshotNear(7))+row('Since last month',findSnapshotNear(30));
+}
+function renderCommentary(){
+  const el=document.getElementById('commentaryList');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<div class="insight-row"><span class="badge pos">i</span><span>Add holdings to see commentary on your portfolio\'s moves.</span></div>';return;}
+  const absPct=n=>Math.abs(n).toFixed(2)+'%';
+  const bullets=[];
+  const withChg=t.d.filter(r=>dayChg[r.sym]!=null&&!isNaN(dayChg[r.sym])&&dayChg[r.sym]!==0);
+  if(withChg.length){
+    const mover=[...withChg].sort((a,b)=>Math.abs(dayChg[b.sym])-Math.abs(dayChg[a.sym]))[0];
+    const chg=dayChg[mover.sym],amt=Math.abs(mover.value*chg/100);
+    bullets.push({pos:chg>=0,text:`<b>${mover.sym}</b> is today's biggest mover, ${chg>=0?'adding':'cutting'} ${php(amt)} (${absPct(chg)}) ${chg>=0?'to':'from'} your portfolio today.`});
+  }
+  const bySort=[...t.d].sort((a,b)=>b.plPct-a.plPct);
+  const best=bySort[0],worst=bySort[bySort.length-1];
+  if(best)bullets.push({pos:best.plPct>=0,text:`<b>${best.sym}</b> is your best performer overall, ${best.plPct>=0?'up':'down'} ${absPct(best.plPct)} since you bought it.`});
+  if(worst&&worst.sym!==best.sym)bullets.push({pos:worst.plPct>=0,text:`<b>${worst.sym}</b> is your weakest performer, ${worst.plPct>=0?'up':'down'} ${absPct(worst.plPct)} since you bought it.`});
+  const wk=findSnapshotNear(7);
+  if(wk){
+    const cur=cash+t.val,diff=cur-wk.netWorth,pctv=wk.netWorth?diff/wk.netWorth*100:0;
+    if(diff!==0)bullets.push({pos:diff>=0,text:`Your net worth is ${diff>=0?'up':'down'} ${absPct(pctv)} (${php(Math.abs(diff))}) over the past week.`});
+  }
+  const w=computeWinRate();
+  if(w.open.total)bullets.push({pos:w.open.pct>=50,text:`${w.open.wins} of ${w.open.total} open position(s) are currently profitable (${w.open.pct.toFixed(0)}% win rate).`});
+  el.innerHTML=bullets.length?bullets.map(b=>`<div class="insight-row"><span class="badge ${b.pos?'pos':'neg'}">${b.pos?'✓':'!'}</span><span>${b.text}</span></div>`).join(''):'<div class="insight-row"><span class="badge pos">i</span><span>Not enough data yet for commentary.</span></div>';
+}
+function renderClosedTrades(){
+  const el=document.getElementById('closedTradesBody');if(!el)return;
+  const closed=computeClosedTrades().slice(0,15);
+  if(!closed.length){el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No closed trades yet — this fills in once you sell a position.</td></tr>';return;}
+  el.innerHTML=closed.map(c=>`<tr>
+    <td><span class="tick"><span class="sw2" style="background:${colorFor(c.sym)}"></span>${c.sym}</span></td>
+    <td>${esc(c.d)}</td><td>${c.shares.toLocaleString()}</td>
+    <td>${php(c.proceeds)}</td><td>${php(c.cost)}</td>
+    <td class="${c.gain>=0?'td-up':'td-dn'}">${sphp(c.gain)}</td>
+    <td class="${c.gain>=0?'td-up':'td-dn'}">${pct(c.retPct)}</td>
+  </tr>`).join('');
+}
+function renderInsights(){renderRUChart();renderWinRateBody();renderDrawdownBody();renderChangeBody();renderCommentary();renderClosedTrades();}
+
+/* ── NET WORTH SECTION ───────────────────────────────────────────────── */
+function setCash(v){const n=parseFloat(v);if(!isNaN(n)&&n>=0)cash=n;renderAll();}
+function renderNWKpis(){
+  const el=document.getElementById('nwKpis');if(!el)return;
+  const t=totals(),nw=cash+t.val;
+  el.innerHTML=`
+    <div class="kpi-card"><div class="top"><div class="lbl">Net worth</div><div class="ic c4">⚖️</div></div><div class="val">${php(nw)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Cash balance</div><div class="ic c1">💵</div></div><input class="cash-input" type="number" step="0.01" min="0" value="${cash.toFixed(2)}" onchange="setCash(this.value)"><div class="note">${nw?(cash/nw*100).toFixed(1)+'% of net worth':''}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Investment value</div><div class="ic c2">📈</div></div><div class="val">${php(t.val)}</div><div class="note">${nw?(t.val/nw*100).toFixed(1)+'% of net worth':'—'}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Snapshots logged</div><div class="ic c3">✅</div></div><div class="val">${snapshots.length}</div><div class="note">daily, kept for history</div></div>`;
+}
+function renderNWLineChart(){
+  const el=document.getElementById('nwLineChart');if(!el)return;
+  if(snapshots.length<2){el.innerHTML='<div class="chart-empty">Building history — come back after a few days of tracking to see your net worth trend.</div>';return;}
+  const data=snapshots;
+  const max=Math.max(...data.map(s=>s.netWorth),1),n=data.length;
+  const W=1000,H=240,padL=56,padB=28,padT=14,padR=14;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const px=i=>padL+(n<=1?plotW/2:i/(n-1)*plotW);
+  const py=v=>padT+plotH-(v/max)*plotH;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=py(v);
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:10px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const mkPath=key=>data.map((s,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(s[key]).toFixed(1)}`).join(' ');
+  const tickIdx=n<=6?data.map((_,i)=>i):[0,Math.round((n-1)*0.25),Math.round((n-1)*0.5),Math.round((n-1)*0.75),n-1];
+  const seen=new Set();
+  const labels=tickIdx.filter(i=>{if(seen.has(i))return false;seen.add(i);return true;}).map(i=>{
+    const dt=new Date(data[i].date);
+    return`<text x="${px(i).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--mono)">${esc(isNaN(dt)?data[i].date:dt.toLocaleDateString('en-PH',{month:'short',day:'numeric'}))}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}
+    <path d="${mkPath('cash')}" style="fill:none;stroke:var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+    <path d="${mkPath('invValue')}" style="fill:none;stroke:var(--violet)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+    <path d="${mkPath('netWorth')}" style="fill:none;stroke:var(--accent2)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+    ${labels}
+  </svg><div class="chart-legend"><span class="li"><span class="sw" style="background:var(--cyan)"></span>Cash</span><span class="li"><span class="sw" style="background:var(--violet)"></span>Investments</span><span class="li"><span class="sw" style="background:var(--accent2)"></span>Net worth</span></div>`;
+}
+function renderNWDonut(){
+  const el=document.getElementById('nwDonutChart');if(!el)return;
+  const t=totals(),nw=cash+t.val;
+  if(nw<=0){el.innerHTML='<div class="chart-empty">No net worth data yet.</div>';return;}
+  const segs=[{name:'Cash',v:cash,c:'var(--cyan)'},{name:'Investments',v:t.val,c:'var(--violet)'}].filter(s=>s.v>0);
+  const R=68,CX=90,CY=90,CIRC=2*Math.PI*R;
+  let offset=0;
+  const arcs=segs.map(s=>{
+    const frac=s.v/nw,dash=frac*CIRC;
+    const seg=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke-width="26" transform="rotate(-90 ${CX} ${CY})" style="stroke:${s.c}" stroke-dasharray="${dash.toFixed(2)} ${(CIRC-dash).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"><title>${s.name} · ${(frac*100).toFixed(1)}%</title></circle>`;
+    offset+=dash;return seg;
+  }).join('');
+  const svg=`<svg class="donut-svg" viewBox="0 0 180 180">${arcs}
+    <text x="${CX}" y="${CY-6}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--sans)">Net worth</text>
+    <text x="${CX}" y="${CY+14}" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700;font-family:var(--mono)">₱${fmtCompact(nw)}</text>
+  </svg>`;
+  const legend=segs.map(s=>`<span class="li"><span class="sw" style="background:${s.c}"></span>${s.name} <b>${(s.v/nw*100).toFixed(1)}%</b></span>`).join('');
+  el.innerHTML=`${svg}<div class="donut-legend">${legend}</div>`;
+}
+function renderSnapshotTable(){
+  const el=document.getElementById('snapBody');if(!el)return;
+  if(!snapshots.length){el.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">No snapshots yet.</td></tr>';return;}
+  const sorted=[...snapshots].sort((a,b)=>a.date<b.date?1:-1);
+  el.innerHTML=sorted.map(s=>`<tr><td>${esc(new Date(s.date).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}))}</td><td>${php(s.cash)}</td><td>${php(s.invValue)}</td><td><b>${php(s.netWorth)}</b></td></tr>`).join('');
+}
+function renderNetWorth(){renderNWKpis();renderNWLineChart();renderNWDonut();renderSnapshotTable();}
+
+/* ── DIVIDEND CALENDAR ───────────────────────────────────────────────── */
+function parseDivRate(raw){
+  const s=String(raw||'').trim();
+  if(!s)return null;
+  const m=s.replace(/,/g,'').match(/(\d+(\.\d+)?)/);
+  return m?parseFloat(m[1]):null;
+}
+function renderDivCal(){
+  const grid=document.getElementById('divcalGrid'),kpi=document.getElementById('divcalKpi');
+  if(!grid||!kpi)return;
+  const syms=activeSyms();
+  if(!syms.length){grid.innerHTML='<div class="empty-block"><span class="bi">📅</span>No holdings yet.</div>';kpi.innerHTML='';return;}
+  const today=new Date().toISOString().slice(0,10);
+  let upcoming=0;
+  grid.innerHTML=syms.map(sym=>{
+    const d=divCalendar[sym]||{};
+    const rate=parseDivRate(d.rate);
+    const h=holding(sym);
+    const hasEx=!!d.exDate;
+    if(hasEx&&d.exDate>=today&&rate!=null&&h)upcoming+=rate*h.shares;
+    const flag=hasEx?`<span class="flag ok">${d.source==='PSE Edge'?'PSE Edge match':'Scheduled'}</span>`:'<span class="flag">No disclosure found</span>';
+    const body=hasEx
+      ?`Ex-date <b style="color:var(--ink)">${esc(d.exDate)}</b>${d.payDate?` · pays <b style="color:var(--ink)">${esc(d.payDate)}</b>`:''}${d.rate?` · rate <b style="color:var(--ink)">${esc(d.rate)}</b>${rate==null?' (unparsed — check value)':''}`:''}`
+      :'No dividend record has been logged yet for this ticker in the dividend tab.';
+    return`<div class="divcal-card" id="dc-${sym}">
+      <div class="dc-hd"><div><div class="tk">${sym}</div><div class="co">${esc(coName(sym))}</div></div>${flag}</div>
+      <div class="body">${body}</div>
+      <button class="btn sm" onclick="toggleDivCalEdit('${sym}')">✎ Correct</button>
+      <div class="fld-row">
+        <label>Ex-dividend date</label><input type="date" id="dcEx-${sym}" value="${esc(d.exDate||'')}">
+        <label>Payment date</label><input type="date" id="dcPay-${sym}" value="${esc(d.payDate||'')}">
+        <label>Rate per share</label><input type="text" id="dcRate-${sym}" placeholder="e.g. ₱0.50" value="${esc(d.rate||'')}">
+        <button class="btn sm gold" style="margin-top:2px" onclick="saveDivCal('${sym}')">Save</button>
+      </div>
+    </div>`;
+  }).join('');
+  kpi.innerHTML=`<div class="kpi-card"><div class="top"><div class="lbl">Estimated upcoming dividend income</div><div class="ic c3">🪙</div></div><div class="val up">${php(upcoming)}</div><div class="note">from holdings with a parsed upcoming ex-dividend date</div></div>`;
+}
+function toggleDivCalEdit(sym){const c=document.getElementById('dc-'+sym);if(c)c.classList.toggle('editing');}
+function saveDivCal(sym){
+  const ex=document.getElementById('dcEx-'+sym).value;
+  const pay=document.getElementById('dcPay-'+sym).value;
+  const rate=document.getElementById('dcRate-'+sym).value.trim();
+  if(!ex&&!pay&&!rate)delete divCalendar[sym];
+  else divCalendar[sym]={exDate:ex,payDate:pay,rate};
+  renderAll();
+}
+
+/* ── PSE EDGE DIVIDEND LOOKUP ─────────────────────────────────────────
+   PSE Edge (edge.pse.com.ph) publishes real dividend disclosures but
+   sends no CORS headers, so a direct fetch() from the browser is blocked
+   by same-origin policy — there is no legitimate JSONP hook here either
+   (unlike Google Sheets). The only browser-side workaround is routing
+   through a public CORS-proxy, which is inherently best-effort: PSE
+   Edge sits behind Cloudflare and intermittently rate-limits/blocks
+   proxy traffic. We race two proxies and degrade to a direct link +
+   the existing manual "Correct" flow when both fail. */
+const PSE_EDGE_DIV_URL='https://edge.pse.com.ph/disclosureData/dividends_and_rights_info_list.ax?DividendsOrRights=Dividends&pageNum=1&sortMode=date&dateSortType=DESC&cmpySortType=ASC';
+const CORS_PROXIES=[
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)
+];
+async function fetchWithTimeout(url,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms);
+  try{
+    const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP'+r.status);
+    const text=await r.text();
+    if(!text||text.length<200)throw new Error('empty');
+    return text;
+  }finally{clearTimeout(t);}
+}
+function fetchPseEdgeHtml(){
+  return Promise.any(CORS_PROXIES.map(mk=>fetchWithTimeout(mk(PSE_EDGE_DIV_URL),18000)));
+}
+const PSE_MON3={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+function parsePseDate(s){
+  const m=String(s||'').trim().match(/^([A-Za-z]{3})[a-z]*\s+(\d{1,2}),?\s+(\d{4})$/);
+  if(!m)return'';
+  const mo=PSE_MON3[m[1][0].toUpperCase()+m[1].slice(1).toLowerCase()];
+  return mo?`${m[3]}-${String(mo).padStart(2,'0')}-${String(+m[2]).padStart(2,'0')}`:'';
+}
+function parsePseDividendRows(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  return[...doc.querySelectorAll('table.list tbody tr')].map(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds.length<7)return null;
+    return{
+      company:tds[0].textContent.trim(),
+      security:tds[1].textContent.trim(),
+      type:tds[2].textContent.trim(),
+      rate:tds[3].textContent.trim(),
+      exDate:parsePseDate(tds[4].textContent.trim()),
+      payDate:parsePseDate(tds[6].textContent.trim())
+    };
+  }).filter(Boolean);
+}
+const STRIP_CORP_WORDS=/\b(inc|incorporated|corp|corporation|company|co|ltd|the|group|holdings?|properties)\b/g;
+function normalizeCompanyName(s){
+  return String(s||'').toLowerCase().replace(/[.,]/g,'').replace(STRIP_CORP_WORDS,'').replace(/\s+/g,' ').trim();
+}
+function companyNameMatches(rowName,holdingName,sym){
+  const a=normalizeCompanyName(rowName),b=normalizeCompanyName(holdingName);
+  if(a&&b){
+    if(a===b||a.includes(b)||b.includes(a))return true;
+    const wa=new Set(a.split(' ').filter(w=>w.length>2)),wb=new Set(b.split(' ').filter(w=>w.length>2));
+    if(wa.size&&wb.size){
+      let overlap=0;wa.forEach(w=>{if(wb.has(w))overlap++;});
+      if(overlap>=Math.min(wa.size,wb.size)*0.6)return true;
+    }
+  }
+  // Some PSE-listed names (mostly REITs) use the ticker itself as the company
+  // name, e.g. "AREIT, Inc." — our COMPANY map calls it "AyalaLand REIT",
+  // which shares no words with that. Fall back to a whole-word ticker match
+  // against the raw (unstripped) disclosure name.
+  if(sym){
+    const words=String(rowName||'').toLowerCase().replace(/[.,]/g,'').split(/\s+/);
+    if(words.includes(sym.toLowerCase()))return true;
+  }
+  return false;
+}
+async function checkPseEdgeDividends(){
+  const btn=document.getElementById('pseEdgeBtn'),statusEl=document.getElementById('pseEdgeStatus');
+  const syms=activeSyms();
+  const PSE_LINK='<a href="https://edge.pse.com.ph/disclosureData/dividends_and_rights_info_form.do" target="_blank" rel="noopener">Open PSE Edge Dividends List ↗</a>';
+  if(!syms.length){if(statusEl){statusEl.className='src-status err';statusEl.textContent='No holdings yet.';}return;}
+  if(btn)btn.disabled=true;
+  if(statusEl){statusEl.className='src-status';statusEl.innerHTML='<span class="spin"></span>Checking PSE Edge…';}
+  try{
+    const html=await fetchPseEdgeHtml();
+    const rows=parsePseDividendRows(html);
+    if(!rows.length)throw new Error('empty');
+    const matched=[],unmatched=[];
+    for(const sym of syms){
+      const name=coName(sym);
+      const hits=rows.filter(r=>companyNameMatches(r.company,name,sym));
+      const best=hits.find(r=>/^common$/i.test(r.security))||hits[0];
+      if(best&&best.exDate){divCalendar[sym]={exDate:best.exDate,payDate:best.payDate,rate:best.rate,source:'PSE Edge'};matched.push(sym);}
+      else unmatched.push(sym);
+    }
+    renderAll();
+    if(statusEl){
+      statusEl.className='src-status ok';
+      statusEl.innerHTML=`✓ Matched ${matched.length}/${syms.length} holding(s) from PSE Edge's Dividends list (page 1, sorted by date)${matched.length?': <b>'+matched.join(', ')+'</b>':''}.`+
+        (unmatched.length?` Not found on page 1: <b>${unmatched.join(', ')}</b> — ${PSE_LINK} and use Correct below.`:'');
+    }
+  }catch(e){
+    if(statusEl){
+      statusEl.className='src-status err';
+      statusEl.innerHTML=`Couldn't reach PSE Edge automatically — their site blocks direct browser requests, and the fallback route is unavailable right now. ${PSE_LINK} and use Correct below to enter it manually.`;
+    }
+  }finally{if(btn)btn.disabled=false;}
+}
+
+/* ── REBALANCE ───────────────────────────────────────────────────────── */
+function renderRebalance(){
+  const el=document.getElementById('rebalBody');if(!el)return;
+  const t=totals();
+  if(!t.d.length){el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No holdings yet.</td></tr>';return;}
+  const rows=[...t.d].sort((a,b)=>b.value-a.value);
+  const threshold=Math.max(50,t.val*0.005);
+  el.innerHTML=rows.map(r=>{
+    const curPct=t.val?r.value/t.val*100:0;
+    const tgt=targets[r.sym];
+    const hasTgt=tgt!=null&&tgt>0;
+    const tgtVal=hasTgt?t.val*tgt/100:null;
+    const gap=hasTgt?tgtVal-r.value:null;
+    let action;
+    if(!hasTgt)action='<span style="color:var(--muted)">—</span>';
+    else if(Math.abs(gap)<=threshold)action='<span class="flag ok">On target</span>';
+    else if(gap>0)action=`<span style="color:var(--up);font-weight:700">Buy ${php(gap)}</span>`;
+    else action=`<span style="color:var(--down);font-weight:700">Sell ${php(Math.abs(gap))}</span>`;
+    return`<tr>
+      <td><span class="tick"><span class="sw2" style="background:${colorFor(r.sym)}"></span><span>${r.sym}<span class="co">${esc(coName(r.sym))}</span></span></span></td>
+      <td>${curPct.toFixed(1)}%</td>
+      <td>${hasTgt?tgt.toFixed(1)+'%':'<span style="color:var(--muted)">not set</span>'}</td>
+      <td>${php(r.value)}</td>
+      <td>${hasTgt?php(tgtVal):'—'}</td>
+      <td>${action}</td>
+      <td><input class="rebal-target" type="number" min="0" max="100" step="0.1" placeholder="0" id="tgt-${r.sym}" value="${hasTgt?tgt:''}"> <button class="save-ic" onclick="setTarget('${r.sym}')">💾</button></td>
+    </tr>`;
+  }).join('');
+}
+function setTarget(sym){
+  const v=parseFloat(document.getElementById('tgt-'+sym).value);
+  if(!v||v<=0)delete targets[sym];else targets[sym]=v;
+  renderAll();
+}
+
+/* ── EXPENSES / INCOME ───────────────────────────────────────────────── */
+function toggleExpForm(){document.getElementById('incForm')?.classList.remove('show');const f=document.getElementById('expForm');f.classList.toggle('show');if(f.classList.contains('show')&&!document.getElementById('expDate').value)document.getElementById('expDate').value=new Date().toISOString().slice(0,10);}
+function toggleIncForm(){document.getElementById('expForm')?.classList.remove('show');const f=document.getElementById('incForm');f.classList.toggle('show');if(f.classList.contains('show')&&!document.getElementById('incDate').value)document.getElementById('incDate').value=new Date().toISOString().slice(0,10);}
+function addExpense(){
+  const date=document.getElementById('expDate').value||new Date().toISOString().slice(0,10);
+  const category=document.getElementById('expCat').value;
+  const description=document.getElementById('expDesc').value.trim();
+  const amount=parseFloat(document.getElementById('expAmt').value);
+  const recurring=document.getElementById('expRec').checked;
+  const notes=document.getElementById('expNotes').value.trim();
+  if(isNaN(amount)||amount<=0){tMsg('Enter a valid expense amount.',true);return;}
+  expenses.push({id:nextExpId++,date,category,description,amount,recurring,notes});
+  document.getElementById('expDesc').value='';document.getElementById('expAmt').value='';document.getElementById('expNotes').value='';document.getElementById('expRec').checked=false;
+  renderAll();tMsg('Expense logged.',false);
+}
+function removeExpense(id){expenses=expenses.filter(e=>e.id!==id);renderAll();}
+function addIncome(){
+  const date=document.getElementById('incDate').value||new Date().toISOString().slice(0,10);
+  const category=document.getElementById('incCat').value.trim()||'Other';
+  const description=document.getElementById('incDesc').value.trim();
+  const amount=parseFloat(document.getElementById('incAmt').value);
+  const recurring=document.getElementById('incRec').checked;
+  if(isNaN(amount)||amount<=0){tMsg('Enter a valid income amount.',true);return;}
+  income.push({id:nextIncId++,date,category,description,amount,recurring});
+  document.getElementById('incCat').value='';document.getElementById('incDesc').value='';document.getElementById('incAmt').value='';document.getElementById('incRec').checked=false;
+  renderAll();tMsg('Income logged.',false);
+}
+function removeIncome(id){income=income.filter(e=>e.id!==id);renderAll();}
+const monthKey=d=>d.slice(0,7);
+const thisMonthKey=()=>new Date().toISOString().slice(0,7);
+function renderExpKpis(){
+  const el=document.getElementById('expKpis');if(!el)return;
+  const total=expenses.reduce((a,e)=>a+e.amount,0);
+  const mk=thisMonthKey();
+  const thisMonth=expenses.filter(e=>monthKey(e.date)===mk).reduce((a,e)=>a+e.amount,0);
+  const recurring=expenses.filter(e=>e.recurring).reduce((a,e)=>a+e.amount,0);
+  el.innerHTML=`
+    <div class="kpi-card"><div class="top"><div class="lbl">Total expenses (all-time)</div><div class="ic c5">🧾</div></div><div class="val">${php(total)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">This month</div><div class="ic c1">📅</div></div><div class="val">${php(thisMonth)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Recurring monthly run-rate</div><div class="ic c4">↻</div></div><div class="val">${php(recurring)}</div><div class="note">from bills marked recurring</div></div>`;
+}
+function renderExpDonut(){
+  const el=document.getElementById('expDonut');if(!el)return;
+  if(!expenses.length){el.innerHTML='<div class="chart-empty">No data yet — log an entry to see this chart.</div>';return;}
+  const bySector={};
+  for(const e of expenses)bySector[e.category]=(bySector[e.category]||0)+e.amount;
+  const total=Object.values(bySector).reduce((a,b)=>a+b,0);
+  const entries=Object.entries(bySector).sort((a,b)=>b[1]-a[1]);
+  const R=68,CX=90,CY=90,CIRC=2*Math.PI*R;
+  let offset=0;
+  const arcs=entries.map(([name,val])=>{
+    const frac=total?val/total:0,dash=frac*CIRC;
+    const seg=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke-width="26" transform="rotate(-90 ${CX} ${CY})" style="stroke:${sectorColorFor('exp:'+name)}" stroke-dasharray="${dash.toFixed(2)} ${(CIRC-dash).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"><title>${esc(name)} · ${(frac*100).toFixed(1)}%</title></circle>`;
+    offset+=dash;return seg;
+  }).join('');
+  const svg=`<svg class="donut-svg" viewBox="0 0 180 180">${arcs}
+    <text x="${CX}" y="${CY-6}" text-anchor="middle" style="fill:var(--muted);font-size:10px;font-family:var(--sans)">Total</text>
+    <text x="${CX}" y="${CY+14}" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700;font-family:var(--mono)">₱${fmtCompact(total)}</text>
+  </svg>`;
+  const legend=entries.map(([name,val])=>`<span class="li"><span class="sw" style="background:${sectorColorFor('exp:'+name)}"></span>${esc(name)} <b>${(total?val/total*100:0).toFixed(1)}%</b></span>`).join('');
+  el.innerHTML=`${svg}<div class="donut-legend">${legend}</div>`;
+}
+function renderRecurringBills(){
+  const el=document.getElementById('recurringBills');if(!el)return;
+  const rec=expenses.filter(e=>e.recurring);
+  if(!rec.length){el.innerHTML='<div class="empty-block"><span class="bi">↻</span>No recurring expense logged yet</div>';return;}
+  el.innerHTML=rec.map(e=>`<div class="mini-row"><span class="mr-lbl">${esc(e.description||e.category)} <span style="color:var(--muted)">· ${esc(e.category)}</span></span><span class="mr-val">${php(e.amount)}/mo</span></div>`).join('');
+}
+function renderExpenseTable(){
+  const el=document.getElementById('expBody');if(!el)return;
+  const q=(document.getElementById('expSearch')?.value||'').trim().toLowerCase();
+  const rows=[...expenses].filter(e=>!q||(e.description||'').toLowerCase().includes(q)||e.category.toLowerCase().includes(q)).sort((a,b)=>a.date<b.date?1:-1);
+  if(!rows.length){el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">No entries logged yet.</td></tr>';return;}
+  el.innerHTML=rows.map(e=>`<tr>
+    <td>${esc(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.description||'—')}</td>
+    <td>${php(e.amount)}</td><td>${e.recurring?'<span class="rec-badge">Recurring</span>':'—'}</td>
+    <td>${esc(e.notes||'—')}</td>
+    <td><button class="rm" onclick="removeExpense(${e.id})">✕</button></td>
+  </tr>`).join('');
+}
+function renderExpenses(){renderExpKpis();renderExpDonut();renderRecurringBills();renderExpenseTable();}
+
+/* ── CASH FLOW ───────────────────────────────────────────────────────── */
+function renderCfKpis(){
+  const el=document.getElementById('cfKpis');if(!el)return;
+  const mk=thisMonthKey();
+  const incMonth=income.filter(i=>monthKey(i.date)===mk).reduce((a,i)=>a+i.amount,0);
+  const expMonth=expenses.filter(e=>monthKey(e.date)===mk).reduce((a,e)=>a+e.amount,0);
+  const net=incMonth-expMonth;
+  el.innerHTML=`
+    <div class="kpi-card"><div class="top"><div class="lbl">Current cash balance</div><div class="ic c1">💼</div></div><div class="val">${php(cash)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Income (this month)</div><div class="ic c2">📈</div></div><div class="val up">${php(incMonth)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Expenses (this month)</div><div class="ic c5">📉</div></div><div class="val down">${php(expMonth)}</div></div>
+    <div class="kpi-card"><div class="top"><div class="lbl">Net cash flow (this month)</div><div class="ic c4">⚖️</div></div><div class="val ${net>=0?'up':'down'}">${sphp(net)}</div></div>`;
+}
+function last6Months(){
+  const out=[],base=new Date();base.setDate(1);
+  for(let i=5;i>=0;i--){const dt=new Date(base);dt.setMonth(dt.getMonth()-i);out.push(dt.toISOString().slice(0,7));}
+  return out;
+}
+function renderCfChart(){
+  const el=document.getElementById('cfChart');if(!el)return;
+  if(!income.length&&!expenses.length){el.innerHTML='<div class="chart-empty">Log some income or expenses to see monthly trends.</div>';return;}
+  const months=last6Months();
+  const data=months.map(m=>({
+    m,
+    inc:income.filter(i=>monthKey(i.date)===m).reduce((a,i)=>a+i.amount,0),
+    exp:expenses.filter(e=>monthKey(e.date)===m).reduce((a,e)=>a+e.amount,0)
+  }));
+  const max=Math.max(...data.map(d=>Math.max(d.inc,d.exp)),1);
+  const W=560,H=220,padL=46,padB=26,padT=10,padR=8;
+  const plotW=W-padL-padR,plotH=H-padT-padB,n=data.length;
+  const slot=plotW/n,gap=slot*0.24,groupW=slot-gap,bw=groupW/2-2;
+  const grid=[0,0.25,0.5,0.75,1].map(f=>{
+    const v=f*max,gy=padT+plotH-f*plotH;
+    return`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" style="stroke:var(--line)" stroke-width="1"></line>
+    <text x="${padL-8}" y="${(gy+3).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font-size:9px;font-family:var(--mono)">₱${fmtCompact(v)}</text>`;
+  }).join('');
+  const bars=data.map((d,i)=>{
+    const gx=padL+i*slot+gap/2;
+    const h1=max?(d.inc/max)*plotH:0,y1=padT+plotH-h1;
+    const h2=max?(d.exp/max)*plotH:0,y2=padT+plotH-h2;
+    const lbl=new Date(d.m+'-01').toLocaleDateString('en-PH',{month:'short'});
+    return`<rect x="${gx.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${h1.toFixed(1)}" rx="2" style="fill:var(--up)"><title>Income ${d.m} · ${php(d.inc)}</title></rect>
+    <rect x="${(gx+bw+3).toFixed(1)}" y="${y2.toFixed(1)}" width="${bw.toFixed(1)}" height="${h2.toFixed(1)}" rx="2" style="fill:var(--down)"><title>Expenses ${d.m} · ${php(d.exp)}</title></rect>
+    <text x="${(gx+groupW/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="fill:var(--muted);font-size:9px;font-family:var(--mono);font-weight:600">${lbl}</text>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${grid}${bars}</svg><div class="chart-legend"><span class="li"><span class="sw" style="background:var(--up)"></span>Income</span><span class="li"><span class="sw" style="background:var(--down)"></span>Expenses</span></div>`;
+}
+function renderCashFlowLog(){
+  const el=document.getElementById('cfBody');if(!el)return;
+  const q=(document.getElementById('cfSearch')?.value||'').trim().toLowerCase();
+  const type=document.getElementById('cfTypeFilter')?.value||'';
+  let rows=[...income.map(i=>({...i,kind:'income'})),...expenses.map(e=>({...e,kind:'expense'}))];
+  if(type)rows=rows.filter(r=>r.kind===type);
+  if(q)rows=rows.filter(r=>(r.description||'').toLowerCase().includes(q)||r.category.toLowerCase().includes(q));
+  rows.sort((a,b)=>a.date<b.date?1:-1);
+  if(!rows.length){el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">No entries logged yet.</td></tr>';return;}
+  el.innerHTML=rows.map(r=>`<tr>
+    <td>${esc(r.date)}</td>
+    <td><span class="side ${r.kind==='income'?'b':'s'}">${r.kind==='income'?'INCOME':'EXPENSE'}</span></td>
+    <td>${esc(r.category)}</td><td>${esc(r.description||'—')}</td>
+    <td class="${r.kind==='income'?'td-up':'td-dn'}">${r.kind==='income'?'+':'-'}${php(r.amount)}</td>
+    <td>${r.recurring?'<span class="rec-badge">Recurring</span>':'—'}</td>
+    <td><button class="rm" onclick="${r.kind==='income'?'removeIncome':'removeExpense'}(${r.id})">✕</button></td>
+  </tr>`).join('');
+}
+function exportCashFlowCSV(){
+  const rows=[['Date','Type','Category','Description','Amount','Recurring'],
+    ...income.map(i=>[i.date,'Income',i.category,i.description||'',i.amount,i.recurring?'Yes':'No']),
+    ...expenses.map(e=>[e.date,'Expense',e.category,e.description||'',-e.amount,e.recurring?'Yes':'No'])
+  ];
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cash-flow.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function renderCashFlow(){renderCfKpis();renderCfChart();renderCashFlowLog();}
+
+/* ── ANNUAL PERFORMANCE REPORT ───────────────────────────────────────── */
+function reportYears(){
+  const years=new Set();
+  txs.forEach(t=>years.add(t.d.slice(0,4)));
+  Object.keys(dividendsByYear).forEach(y=>{if(/^\d{4}$/.test(y))years.add(y);});
+  snapshots.forEach(s=>years.add(s.date.slice(0,4)));
+  years.add(String(new Date().getFullYear()));
+  return[...years].filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>b-a);
+}
+function populateReportYears(){
+  const sel=document.getElementById('reportYear');if(!sel)return;
+  const cur=sel.value,years=reportYears();
+  sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  sel.value=years.includes(cur)?cur:years[0];
+}
+function renderReport(){
+  populateReportYears();
+  const sel=document.getElementById('reportYear'),body=document.getElementById('reportBody');
+  if(!sel||!body)return;
+  const year=sel.value;
+  const closed=computeClosedTrades().filter(c=>c.d.slice(0,4)===year);
+  const realized=closed.reduce((a,c)=>a+c.gain,0);
+  const sellProceeds=closed.reduce((a,c)=>a+c.proceeds,0);
+  const tax=sellProceeds*0.006;
+  const dividends=dividendsByYear[year]||0;
+  const wht=dividends*0.10;
+  const buys=txs.filter(t=>t.t==='Buy'&&t.d.slice(0,4)===year);
+  const newCapital=buys.reduce((a,t)=>a+(t.a!=null?t.a:t.p*t.n),0);
+  const snapsInYear=snapshots.filter(s=>s.date.slice(0,4)===year).sort((a,b)=>a.date<b.date?-1:1);
+  const startSnap=snapsInYear[0],endSnap=snapsInYear[snapsInYear.length-1];
+  const t=totals();
+  const bySort=[...t.d].sort((a,b)=>b.plPct-a.plPct);
+  const best=bySort[0],worst=bySort[bySort.length-1];
+  body.innerHTML=`
+    <div class="report-card">
+      <h3>Portfolio Performance Report — ${esc(year)}</h3>
+      <div class="gen">Generated ${new Date().toLocaleString('en-PH',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi-card"><div class="top"><div class="lbl">Realized P&L this year</div><div class="ic ${realized>=0?'c2':'c5'}">${realized>=0?'📈':'📉'}</div></div><div class="val ${realized>=0?'up':'down'}">${sphp(realized)}</div><div class="note">${closed.length} closed trade(s)</div></div>
+      <div class="kpi-card"><div class="top"><div class="lbl">Dividends received</div><div class="ic c3">🪙</div></div><div class="val up">${php(dividends)}</div><div class="note">Est. 10% WHT: ${php(wht)}</div></div>
+      <div class="kpi-card"><div class="top"><div class="lbl">Stock transaction tax (est.)</div><div class="ic c1">🧾</div></div><div class="val">${php(tax)}</div><div class="note">0.6% of ${php(sellProceeds)} sold</div></div>
+      <div class="kpi-card"><div class="top"><div class="lbl">New capital invested</div><div class="ic c4">💵</div></div><div class="val">${php(newCapital)}</div><div class="note">${buys.length} transaction(s) this year</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chd"><span class="ic">⚖️</span>Net worth</div>
+        <div class="chart-body">${
+          startSnap&&endSnap&&startSnap!==endSnap
+          ?`<div class="mini-row"><span class="mr-lbl">Start of year (${esc(startSnap.date)})</span><span class="mr-val">${php(startSnap.netWorth)}</span></div>
+             <div class="mini-row"><span class="mr-lbl">End of year (${esc(endSnap.date)})</span><span class="mr-val">${php(endSnap.netWorth)}</span></div>
+             <div class="mini-row"><span class="mr-lbl">Change</span><span class="mr-val" style="color:${endSnap.netWorth>=startSnap.netWorth?'var(--up)':'var(--down)'}">${sphp(endSnap.netWorth-startSnap.netWorth)}</span></div>`
+          :`<div class="prog-note" style="margin-bottom:8px">Not enough Net Worth History logged yet to show a start/end comparison for this year — visit the Net Worth page a few times to build it up.</div>
+             <div class="mini-row"><span class="mr-lbl">Current portfolio value</span><span class="mr-val">${php(t.val)} (${sphp(t.pl)} unrealized)</span></div>`
+        }</div>
+      </div>
+      <div class="chart-card">
+        <div class="chd"><span class="ic">👤</span>Best / worst holding</div>
+        <div class="chart-body">${
+          t.d.length?`
+          <div class="mini-row"><span class="mr-lbl">▲ Best: ${esc(best.sym)}</span><span class="mr-val" style="color:var(--up)">${pct(best.plPct)}</span></div>
+          <div class="mini-row"><span class="mr-lbl">▼ Worst: ${esc(worst.sym)}</span><span class="mr-val" style="color:var(--down)">${pct(worst.plPct)}</span></div>
+          <div class="prog-note" style="margin-top:8px">Based on current standing across ${t.d.length} holding(s), not specifically this year's per-stock return.</div>`
+          :'<div class="prog-note">No current holdings.</div>'
+        }</div>
+      </div>
+    </div>
+    <div class="report-note">Tax figures are estimates using standard Philippine rates (10% dividend withholding, 0.6% stock transaction tax on sells) applied to what's logged in your Transactions — they aren't a substitute for your actual broker tax documents or a tax professional's advice.</div>`;
+}
+
+const COLS=[{k:'sym',l:'Stock'},{k:'shares',l:'Shares'},{k:'cost',l:'Cost avg'},{k:'price',l:'Current price'},{k:'capital',l:'Capital in'},{k:'value',l:'Value now'},{k:'pl',l:'Gain / loss'},{k:'plPct',l:'%'},{k:'signal',l:'Signal'},{k:'_rm',l:''}];
+function renderTable(){
+  document.getElementById('thead').innerHTML=COLS.map(c=>c.k==='_rm'?'<th style="cursor:default"></th>':`<th onclick="setSort('${c.k}')">${c.l}${sortKey===c.k?`<span class="arr">${sortDir>0?'▲':'▼'}</span>`:''}</th>`).join('');
+  const t=totals();let d=[...t.d];
+  if(sortKey)d.sort((a,b)=>{const va=a[sortKey],vb=b[sortKey];return(typeof va==='string'?va.localeCompare(vb):va-vb)*sortDir;});
+  const chgHTML=sym=>{const c=dayChg[sym];if(c==null||isNaN(c))return'';return`<span class="dchg ${c>=0?'up':'dn'}">${c>=0?'+':''}${c.toFixed(2)}% today</span>`;};
+  document.getElementById('tbody').innerHTML=d.length?d.map(r=>`
+    <tr class="${activeSym===r.sym?'active':''}" onclick="openDetail('${r.sym}')">
+      <td><span class="tick"><span class="sw2" style="background:${colorFor(r.sym)}"></span><span>${r.sym}<span class="co">${esc(coName(r.sym))}</span></span></span></td>
+      <td>${r.shares.toLocaleString()}</td>
+      <td>${php(r.cost)}</td>
+      <td><input class="pr" type="number" step="0.01" min="0" value="${+r.price.toFixed(4)}" onclick="event.stopPropagation()" onchange="setPrice('${r.sym}',this.value)">${chgHTML(r.sym)}</td>
+      <td>${php(r.capital)}</td><td>${php(r.value)}</td>
+      <td class="${r.pl>=0?'td-up':'td-dn'}">${sphp(r.pl)}</td>
+      <td class="${r.pl>=0?'td-up':'td-dn'}">${pct(r.plPct)}</td>
+      <td><span class="sig ${r.signal==='BUY'?'b':'h'}">${r.signal}</span></td>
+      <td><button class="rm" data-k="stock" data-i="${r.sym}" onclick="event.stopPropagation();arm(this)">✕</button></td>
+    </tr>`).join(''):'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">No holdings yet.</td></tr>';
+  document.getElementById('tfoot').innerHTML=`<td>TOTAL · ${d.length} stocks</td><td></td><td></td><td></td><td>${php(t.cap)}</td><td>${php(t.val)}</td><td style="color:${t.pl>=0?'var(--up)':'var(--down)'}">${sphp(t.pl)}</td><td style="color:${t.pl>=0?'var(--up)':'var(--down)'}">${pct(t.growth)}</td><td></td><td></td>`;
+}
+function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}renderTable();}
+function setPrice(sym,v){const n=parseFloat(v);if(!isNaN(n)&&n>=0)prices[sym]=n;renderAll();if(activeSym===sym)renderDetail(sym);}
+
+function arm(btn){
+  if(btn.classList.contains('armed')){
+    const k=btn.dataset.k,i=btn.dataset.i;
+    if(k==='stock'){txs=txs.filter(t=>t.sym!==i);delete prices[i];if(activeSym===i){activeSym=null;document.getElementById('det').classList.remove('open');}tMsg(i+' removed.',false);}
+    else{txs=txs.filter(t=>t.id!==+i);tMsg('Transaction removed.',false);}
+    renderAll();if(activeSym)renderDetail(activeSym);return;
+  }
+  btn.classList.add('armed');btn.textContent='Sure?';
+  setTimeout(()=>{if(btn.isConnected){btn.classList.remove('armed');btn.textContent='✕';}},2500);
+}
+
+function renderLog(){
+  const sorted=[...txs].sort((a,b)=>a.d===b.d?(b.id||0)-(a.id||0):(a.d<b.d?1:-1));
+  document.getElementById('logBody').innerHTML=sorted.length?sorted.map(tx=>`
+    <tr><td><span class="tick"><span class="sw2" style="background:${colorFor(tx.sym)}"></span>${tx.sym}</span></td>
+    <td>${esc(tx.d)}</td><td><span class="side ${tx.t==='Buy'?'b':'s'}">${tx.t.toUpperCase()}</span></td>
+    <td>${php(tx.p)}</td><td>${tx.n.toLocaleString()}</td>
+    <td>${php(tx.a!=null?tx.a:tx.p*tx.n)}</td>
+    <td><button class="rm" data-k="tx" data-i="${tx.id}" onclick="arm(this)">✕</button></td></tr>`).join('')
+    :'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Empty log.</td></tr>';
+  document.getElementById('logHint').textContent=txs.length+' transactions · ✕ removes one entry and recomputes';
+}
+function renderTxForm(){
+  const syms=activeSyms();
+  if(!syms.includes(txSym)&&txSym!=='__new__')txSym=syms[0]||'__new__';
+  renderStockTrigger();
+  txSymChanged();
+  if(!document.getElementById('txDate').value)document.getElementById('txDate').value=new Date().toISOString().slice(0,10);
+}
+function txSymChanged(){
+  const isNew=txSym==='__new__';
+  document.getElementById('txform').classList.toggle('shownew',isNew);
+  const px=document.getElementById('txPrice'),af=document.getElementById('pxAuto');
+  if(!isNew&&prices[txSym]!=null){px.value=prices[txSym];af.textContent='· auto-filled';}else{px.value='';af.textContent='';}
+}
+function setTxSide(v){
+  const c=document.getElementById('txSide');c.dataset.value=v;
+  c.querySelectorAll('.seg-opt').forEach(b=>b.classList.toggle('active',b.textContent.trim()===v));
+}
+function renderStockTrigger(){
+  const btn=document.getElementById('stockPickBtn');if(!btn)return;
+  if(txSym==='__new__')btn.innerHTML='<span style="color:var(--gold2);font-weight:700">＋ New stock…</span>';
+  else if(txSym)btn.innerHTML=`<span class="sw3" style="background:${colorFor(txSym)}"></span><b>${txSym}</b><span class="co2">${esc(coName(txSym))}</span>`;
+  else btn.innerHTML='<span style="color:var(--muted)">Select a stock…</span>';
+}
+function toggleStockPicker(){stockPanelOpen?closeStockPicker():openStockPicker();}
+function openStockPicker(){
+  stockPanelOpen=true;
+  document.getElementById('stockPanel').style.display='block';
+  document.getElementById('stockPickBtn').classList.add('open');
+  const s=document.getElementById('stockSearch');s.value='';renderStockList();
+  setTimeout(()=>s.focus(),0);
+  document.addEventListener('click',onStockPickerOutside,true);
+}
+function closeStockPicker(){
+  stockPanelOpen=false;
+  const p=document.getElementById('stockPanel');if(p)p.style.display='none';
+  const b=document.getElementById('stockPickBtn');if(b)b.classList.remove('open');
+  document.removeEventListener('click',onStockPickerOutside,true);
+}
+function onStockPickerOutside(e){
+  const w=document.getElementById('stockPickerWrap');
+  if(w&&!w.contains(e.target))closeStockPicker();
+}
+function renderStockList(){
+  const q=(document.getElementById('stockSearch').value||'').trim().toUpperCase();
+  const syms=activeSyms().filter(s=>!q||s.includes(q)||coName(s).toUpperCase().includes(q));
+  const rows=syms.map(s=>`<div class="stock-opt" onclick="selectStock('${s}')">
+    <span class="sw3" style="background:${colorFor(s)}"></span>
+    <span class="tk">${s}</span><span class="co2">${esc(coName(s))}</span>
+    ${prices[s]!=null?`<span class="px2">${php(prices[s])}</span>`:''}
+  </div>`).join('');
+  document.getElementById('stockList').innerHTML=(rows||(q?`<div class="stock-empty">No match for "${esc(q)}"</div>`:''))
+    +`<div class="stock-opt new" onclick="selectStock('__new__')">＋ New stock…</div>`;
+}
+function stockSearchKey(e){
+  if(e.key==='Escape'){closeStockPicker();return;}
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const q=(document.getElementById('stockSearch').value||'').trim().toUpperCase();
+    const syms=activeSyms().filter(s=>!q||s.includes(q)||coName(s).toUpperCase().includes(q));
+    if(syms.length)selectStock(syms[0]);
+  }
+}
+function selectStock(v){
+  txSym=v;
+  closeStockPicker();
+  renderStockTrigger();
+  txSymChanged();
+}
+function renderDivi(){
+  const t=totals();
+  const years=Object.keys(dividendsByYear).sort((a,b)=>{
+    const na=parseInt(a,10),nb=parseInt(b,10);
+    if(!isNaN(na)&&!isNaN(nb))return na-nb;
+    if(!isNaN(na))return -1;if(!isNaN(nb))return 1;
+    return a.localeCompare(b);
+  });
+  const grid=document.getElementById('diviGrid');
+  if(!years.length){
+    grid.innerHTML='<div class="dc" style="grid-column:1/-1"><div class="note" style="font-size:13.5px">No dividend data yet — load your Dividend Log via Google Sheet gid or XLSX import above, or add a year below.</div></div>';
+    return;
+  }
+  grid.innerHTML=years.map(y=>`
+    <div class="dc"><div class="lbl">${esc(/^\d+$/.test(y)?y+' dividends':y)}</div>
+    <input type="number" step="0.01" min="0" value="${dividendsByYear[y].toFixed(2)}" onchange="setDivYear('${esc(y)}',this.value)">
+    <div class="note">${t.cap?(dividendsByYear[y]/t.cap*100).toFixed(2)+'% of capital deployed':'editable'}</div></div>`).join('')
+    +`<div class="dc" style="border-left:3px solid var(--gold)"><div class="lbl">Total · all years</div><div class="val up">${php(t.dividends)}</div><div class="note">yield on capital ${t.cap?(t.dividends/t.cap*100).toFixed(2)+'%':'—'}</div></div>`;
+}
+function setDivYear(y,v){
+  const n=parseFloat(v);
+  if(!isNaN(n)&&n>=0)dividendsByYear[y]=n;else delete dividendsByYear[y];
+  renderAll();
+}
+function addDivYear(){
+  const ye=document.getElementById('newDivYear'),ae=document.getElementById('newDivAmt');
+  const y=ye.value.trim()||'Other',amt=parseFloat(ae.value);
+  if(isNaN(amt)||amt<0){tMsg('Enter a valid dividend amount.',true);return;}
+  dividendsByYear[y]=+((dividendsByYear[y]||0)+amt).toFixed(2);
+  ye.value='';ae.value='';renderAll();
+}
+function renderAll(){logSnapshot();renderStats();renderRibbon();renderDonut();renderBarChart();renderLineChart();renderTable();renderLog();renderTxForm();renderDivi();renderPerformance();renderInsights();renderNetWorth();renderDivCal();renderRebalance();renderExpenses();renderCashFlow();renderReport();save();}
+
+/* ── DETAIL ─────────────────────────────────────────────────────────── */
+function openDetail(sym,noScroll){
+  if(!holding(sym))return;
+  activeSym=sym;
+  document.getElementById('det').classList.add('open');
+  renderTable();renderDetail(sym);
+  if(!noScroll)document.getElementById('det').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderDetail(sym){
+  const r=holding(sym);if(!r){document.getElementById('det').classList.remove('open');return;}
+  document.getElementById('detHd').innerHTML=`
+    <span class="bigsw" style="background:${colorFor(sym)}"></span>
+    <div><h3>${sym}</h3><div class="co">${esc(coName(sym))} · ${esc(secName(sym))}</div></div>
+    <div class="sp"></div>
+    <button class="btn prim" id="newsBtn" onclick="fetchNews('${sym}')">Get live news &amp; AI status</button>`;
+  const toBE=r.cost-r.price;const chg=dayChg[sym];
+  document.getElementById('detMet').innerHTML=[
+    {l:'Shares',v:r.shares.toLocaleString()},
+    {l:'Cost average',v:php(r.cost),s:'auto from log'},
+    {l:'Current price',v:php(r.price),s:chg!=null?`${chg>=0?'+':''}${chg.toFixed(2)}% today`:'live'},
+    {l:'Break-even',v:php(r.cost),s:toBE>0?`needs ${pct(toBE/r.price*100)} to recover`:'above water'},
+    {l:'Position value',v:php(r.value)},
+    {l:'Gain / loss',v:sphp(r.pl),c:r.pl>=0?'up':'dn',s:pct(r.plPct)}
+  ].map(m=>`<div class="met"><div class="lbl">${m.l}</div><div class="val ${m.c||''}">${m.v}</div>${m.s?`<div class="sub">${m.s}</div>`:''}</div>`).join('');
+  const stx=txs.filter(t=>t.sym===sym).sort((a,b)=>a.d<b.d?1:-1);
+  document.getElementById('detTx').innerHTML=`<h4>${sym} transactions (${stx.length})</h4>`+stx.map(tx=>`<div class="row"><span class="side ${tx.t==='Buy'?'b':'s'}">${tx.t.toUpperCase()}</span><span>${esc(tx.d)}</span><span>${tx.n.toLocaleString()} sh</span><span>@ ${php(tx.p)}</span><span style="color:var(--muted)">${php(tx.a!=null?tx.a:tx.p*tx.n)}</span></div>`).join('');
+  const nz=document.getElementById('nz');
+  nz.innerHTML=newsCache[sym]||`<div class="empty">Get the latest headlines and an AI read on ${esc(coName(sym))} — click the button above.</div>`;
+}
+
+/* ── TX RECORD ───────────────────────────────────────────────────────── */
+function txMsg(txt,cls){const m=document.getElementById('txMsg');m.innerHTML=txt;m.className='txmsg '+(cls||'');}
+async function addTx(){
+  const sv=txSym;
+  const isNew=sv==='__new__';
+  let sym=isNew?document.getElementById('txNew').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''):sv;
+  const side=document.getElementById('txSide').dataset.value;
+  const shares=parseInt(document.getElementById('txShares').value,10);
+  let price=parseFloat(document.getElementById('txPrice').value);
+  const date=document.getElementById('txDate').value||new Date().toISOString().slice(0,10);
+  if(!sym){txMsg('Enter a ticker.','err');return;}
+  if(!shares||shares<=0){txMsg('Enter the number of shares.','err');return;}
+  if(side==='Sell'){const h=holding(sym);if(!h||h.shares<shares){txMsg(`You only hold ${h?h.shares.toLocaleString():0} ${sym} shares.`,'err');return;}}
+  const btn=document.getElementById('txBtn');
+  if(isNew||isNaN(price)||price<=0){
+    btn.disabled=true;
+    txMsg('<span class="spin"></span>Looking up '+sym+'…');
+    try{
+      const raw=await callClaude(`Search the web for PSE ticker "${sym}". Respond ONLY with raw JSON no fences: {"found":true|false,"company":"...","sector":"...","price":number}.`,true);
+      const j=pluckJSON(raw);
+      if(j.found===false){txMsg(`"${sym}" not found on PSE.`,'err');btn.disabled=false;return;}
+      if(j.company)COMPANY[sym]=String(j.company);
+      if(j.sector)SECTOR[sym]=String(j.sector);
+      if(isNaN(price)||price<=0)price=parseFloat(j.price)||0;
+      if(!prices[sym]&&parseFloat(j.price))prices[sym]=parseFloat(j.price);
+    }catch(e){if(isNaN(price)||price<=0){txMsg('AI lookup unavailable — enter the price manually.','err');btn.disabled=false;return;}}
+    btn.disabled=false;
+  }
+  if(isNaN(price)||price<=0){txMsg('Enter the price per share.','err');return;}
+  colorFor(sym);if(!prices[sym])prices[sym]=price;
+  txs.push({sym,d:date,t:side,p:price,n:shares,id:nextId++});
+  const h=holding(sym);
+  txMsg(`Recorded: ${side} ${shares.toLocaleString()} ${sym} @ ${php(price)} — cost avg now ${php(h.cost)}, ${h.shares.toLocaleString()} shares.`,'ok');
+  document.getElementById('txShares').value='';document.getElementById('txNew').value='';
+  renderAll();
+  if(activeSyms().includes(sym)){txSym=sym;renderStockTrigger();txSymChanged();}
+  openDetail(sym,true);
+}
+
+/* ── XLSX IMPORT ─────────────────────────────────────────────────────── */
+let xlsxWB=null;
+function switchSrc(id,btn){
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.src-panel').forEach(p=>p.classList.remove('show'));
+  document.getElementById('src-'+id).classList.add('show');
+}
+function onDrop(e){
+  e.preventDefault();document.getElementById('dropZone').classList.remove('drag');
+  const f=e.dataTransfer.files[0];if(f)readXlsx(f);
+}
+function onXlsxFile(e){const f=e.target.files[0];if(f)readXlsx(f);e.target.value='';}
+function readXlsx(file){
+  srcStatus('Reading '+file.name+'…','');
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      xlsxWB=XLSX.read(ev.target.result,{type:'array',cellText:true,cellDates:true});
+      const names=xlsxWB.SheetNames;
+      document.getElementById('sheetPick').style.display='block';
+      document.getElementById('sheetList').innerHTML=names.map(n=>`<button class="sheet-btn" onclick="importSheet('${n.replace(/'/g,"\\'")}',this)">${n}</button>`).join('');
+      srcStatus('Found '+names.length+' sheet(s) in '+file.name+' — click each one to import. Start with "Investment Log", then "Dashboard", then dividend sheets.','ok');
+    }catch(err){srcStatus('Could not read file: '+err.message,'err');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function importSheet(name,btn){
+  if(!xlsxWB)return;
+  const ws=xlsxWB.Sheets[name];
+  if(!ws){srcStatus('Sheet "'+name+'" not found.','err');return;}
+  // Convert to array of arrays (formatted text)
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  const type=detectSheetType(rows);
+  if(type==='log'){
+    const parsed=parseInvestmentLog(rows);
+    if(!parsed.length){srcStatus('"'+name+'" looks like the Investment Log but no transactions were found. Check that rows have a Buy/Sell column.','err');return;}
+    txs=parsed.map((t,i)=>({...t,id:i+1}));nextId=txs.length+1;
+    for(const s of new Set(txs.map(t=>t.sym)))colorFor(s);
+    activeSym=null;document.getElementById('det').classList.remove('open');
+    renderAll();btn.classList.add('active');
+    srcStatus('✓ Investment Log: '+parsed.length+' transactions loaded — '+computeHoldings().rows.length+' holdings.\nNow import your Dashboard sheet for current prices.','ok');
+  }else if(type==='dash'){
+    const{px,div}=parseDashboard(rows);
+    const n=Object.keys(px).length;
+    if(!n&&div==null){srcStatus('"'+name+'" looks like the Dashboard but no prices found. Expected columns: Stock · Shares · Cost Avg · Current Price…','err');return;}
+    Object.assign(prices,px);
+    // Dashboard's dividend figure is a lump total with no year breakdown — only use
+    // it as a fallback when no per-year Dividend Log has been imported yet, so it
+    // never overwrites real per-year data regardless of import order.
+    let dashNote='';
+    if(div!=null){
+      if(!Object.keys(dividendsByYear).length){dividendsByYear={Total:div};dashNote=' + dividends '+php(div);}
+      else dashNote=' (dividend figure '+php(div)+' skipped — per-year data already loaded)';
+    }
+    renderAll();btn.classList.add('active');
+    srcStatus('✓ Dashboard: '+n+' stock prices imported'+dashNote+'.','ok');
+  }else if(type==='div'){
+    const{sum,count,byStock}=parseDividendLog(rows);
+    if(!count){srcStatus('"'+name+'" looks like a Dividend Log but no entries found.','err');return;}
+    const yr=(name.match(/(20\d{2})/)||[])[1]||'Other';
+    if('Total' in dividendsByYear)delete dividendsByYear.Total;
+    dividendsByYear[yr]=+((dividendsByYear[yr]||0)+sum).toFixed(2);
+    for(const s in byStock)dividendsByStock[s]=+((dividendsByStock[s]||0)+byStock[s]).toFixed(2);
+    renderAll();btn.classList.add('active');
+    srcStatus('✓ '+name+': '+count+' dividend entries, '+php(sum)+' added to '+yr+' — total dividends now '+php(totalDividends())+'.','ok');
+  }else{
+    srcStatus('"'+name+'" could not be identified as Investment Log, Dashboard or Dividend Log. Try selecting a different sheet.','err');
+  }
+}
+const NOT_TICKERS=new Set(['BUY','SELL','DONT','HOLD','CPA','ALLOC','TOTAL','STOCKS','COMPANY','NET','CAPITAL','CURRENT','LOSS','GAIN','PHP','REIT','STOCK','SHARES','DATE','TYPE','PRICE','AVERAGE']);
+function tickerIn(cells,upto){
+  const lim=upto!=null?upto:cells.length;
+  for(let i=0;i<lim;i++){const c=String(cells[i]||'').trim();if(/^[A-Z][A-Z0-9]{1,7}$/.test(c)&&!NOT_TICKERS.has(c))return{sym:c,idx:i};}
+  return null;
+}
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function isoDate(s){
+  s=String(s||'').trim();
+  let m=s.match(/^(\d{1,2})-([A-Za-z]{3,})-(\d{4})$/);
+  if(m){const mo=MON[m[2].slice(0,3).toLowerCase()];if(mo)return`${m[3]}-${String(mo).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  // Excel serial date
+  if(/^\d{4,5}$/.test(s)){const d=XLSX.SSF.parse_date_code(+s);if(d)return`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;}
+  const d=new Date(s);return isNaN(d)?'':d.toISOString().slice(0,10);
+}
+function detectSheetType(rows){
+  const head=rows.slice(0,4).map(r=>r.join(' ')).join(' ').toUpperCase();
+  if(/COST\s*AVERAGE|CURRENT\s*PRICE|CAPITAL\s*VALUE|POTENTIAL\s*GAIN/.test(head))return'dash';
+  if(/DIVIDEND|PAYOUT/.test(head)&&!/BUY|SELL/.test(head.slice(0,200)))return'div';
+  for(const r of rows){const i=r.findIndex(c=>/^(buy|sell)$/i.test(String(c).trim()));if(i>=0&&i<=5)return'log';}
+  for(const r of rows){const tk=tickerIn(r);if(!tk)continue;let n=0;for(let j=tk.idx+1;j<r.length;j++)if(!isNaN(num(r[j])))n++;if(n>=3)return'dash';}
+  return null;
+}
+function parseInvestmentLog(rows){
+  const out=[];
+  for(const cells of rows){
+    const sideIdx=cells.findIndex(c=>/^(buy|sell)$/i.test(String(c).trim()));
+    if(sideIdx<0||sideIdx>5)continue;
+    const tk=tickerIn(cells,sideIdx);if(!tk)continue;
+    const nums=[];for(let i=sideIdx+1;i<cells.length;i++){const v=num(cells[i]);if(!isNaN(v))nums.push(v);}
+    if(nums.length<2)continue;
+    const price=nums[0];let shares=Math.round(Math.abs(nums[1]));
+    if(!price||price<=0||!shares)continue;
+    const side=/sell/i.test(cells[sideIdx])?'Sell':'Buy';
+    let dateCell='';
+    for(const c of cells){const d=isoDate(String(c));if(d){dateCell=d;break;}}
+    const tx={sym:tk.sym,d:dateCell||new Date().toISOString().slice(0,10),t:side,p:price,n:shares};
+    if(side==='Buy'&&nums.length>=5){const amt=nums[4];if(amt>0&&Math.abs(amt-price*shares)>0.005&&Math.abs(amt-price*shares)<price*shares*0.3)tx.a=amt;}
+    out.push(tx);
+  }
+  return out;
+}
+function parseDashboard(rows){
+  const px={};let div=null;
+  for(const cells of rows){
+    const joined=cells.join(' ').toUpperCase();
+    if(/NET\s*RECEIVED\s*DIVIDEND/.test(joined)||/NET\s*DIVIDEND/.test(joined)){
+      for(const c of cells){const v=num(c);if(!isNaN(v)&&v>100){div=v;break;}}continue;
+    }
+    const tk=tickerIn(cells);if(!tk)continue;
+    const nums=[];for(let i=tk.idx+1;i<cells.length;i++){const v=num(cells[i]);if(!isNaN(v))nums.push(v);}
+    // col order: shares, cost avg, CURRENT PRICE, total capital, capital value…
+    if(nums.length>=3&&nums[2]>0)px[tk.sym]=nums[2];
+  }
+  return{px,div};
+}
+function parseDividendLog(rows){
+  // Prefer an explicit payout-amount header column. A "last numeric cell in the
+  // row" guess breaks when a second table (e.g. a monthly pivot summary) shares
+  // the same rows further right, and date cells like "4-Mar-2025" parse a
+  // leading digit as a number too.
+  let amtCol=-1;
+  for(const cells of rows.slice(0,3)){
+    const idx=cells.findIndex(c=>/PAYOUT|RECEIVED/i.test(String(c||'')));
+    if(idx>=0){amtCol=idx;break;}
+  }
+  let sum=0,count=0;const byStock={};
+  for(const cells of rows){
+    const tk=tickerIn(cells);if(!tk)continue;
+    let last=NaN;
+    if(amtCol>=0){
+      const v=num(cells[amtCol]);if(!isNaN(v))last=v;
+    }else{
+      for(let i=tk.idx+1;i<Math.min(cells.length,tk.idx+7);i++){
+        if(isoDate(cells[i]))continue;
+        const v=num(cells[i]);if(!isNaN(v))last=v;
+      }
+    }
+    if(!isNaN(last)&&Math.abs(last)<1e7){sum+=last;count++;byStock[tk.sym]=+((byStock[tk.sym]||0)+last).toFixed(2);}
+  }
+  return{sum,count,byStock};
+}
+
+/* ── GID LOADER ──────────────────────────────────────────────────────── */
+function extractSheetId(raw){
+  const m=String(raw).match(/\/d\/([a-zA-Z0-9-_]{20,})/);
+  if(m)return m[1];
+  const t=String(raw).trim();
+  return/^[a-zA-Z0-9-_]{20,}$/.test(t)?t:null;
+}
+function parseTabRef(raw){
+  const s=String(raw||'').trim();if(!s)return null;
+  const m=s.match(/[#?&]gid=(\d+)/);if(m)return{gid:m[1],label:'gid '+m[1]};
+  if(/^\d+$/.test(s))return{gid:s,label:'gid '+s};
+  return{name:s,label:'"'+s+'"'};
+}
+function tabParam(ref){return ref.gid!=null?'gid='+ref.gid:'sheet='+encodeURIComponent(ref.name);}
+
+function gvizToRows(resp){
+  const t=(resp&&resp.table)||{};
+  const rows=[(t.cols||[]).map(c=>String(c.label||''))];
+  for(const r of(t.rows||[])){
+    rows.push((r.c||[]).map(c=>{
+      if(!c||c.v==null&&c.f==null)return'';
+      if(c.f!=null)return String(c.f);
+      if(typeof c.v==='string'){const m=c.v.match(/^Date\((\d+),(\d+),(\d+)/);if(m)return`${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;}
+      return String(c.v);
+    }));
+  }
+  return rows;
+}
+async function fetchTabGViz(id,ref){
+  // Try JSON first (works on most networks), then CSV fallback
+  const base=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${tabParam(ref)}`;
+  const cb='_gviz_'+Math.random().toString(36).slice(2);
+  // JSONP via script tag — works from file:// and most local environments
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    let settled=false;
+    const done=(fn,arg)=>{if(settled)return;settled=true;try{delete window[cb];}catch{window[cb]=undefined;}s.remove();clearTimeout(timer);fn(arg);};
+    window[cb]=resp=>{
+      if(resp&&resp.status==='error'){
+        const msg=((resp.errors||[])[0]||{}).detailed_message||'';
+        done(reject,new Error(/not\s*found|does not exist/i.test(msg)?'NOTFOUND':'GVIZERR'));
+      }else done(resolve,gvizToRows(resp));
+    };
+    // If the sheet is private, script loads but callback never fires (redirect to login)
+    s.onload=()=>setTimeout(()=>done(reject,new Error('PRIVATE')),500);
+    s.onerror=()=>done(reject,new Error('NETWORK'));
+    const timer=setTimeout(()=>done(reject,new Error('TIMEOUT')),18000);
+    s.src=base+'&tqx=out:json;responseHandler:'+cb;
+    document.head.appendChild(s);
+  });
+}
+async function fetchTab(id,ref){
+  // Try JSONP first, then CSV fetch as fallback
+  try{return await fetchTabGViz(id,ref);}
+  catch(e1){
+    if(e1.message==='PRIVATE'||e1.message==='NOTFOUND')throw e1;
+    try{
+      const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&${tabParam(ref)}`;
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok)throw new Error('HTTP'+r.status);
+      const text=await r.text();
+      if(/^\s*</.test(text))throw new Error('PRIVATE');
+      return parseCSVText(text);
+    }catch(e2){
+      throw e2.message==='PRIVATE'?e2:e1;
+    }
+  }
+}
+function parseCSVText(text){
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else q=false;}else cell+=c;}
+    else if(c==='"')q=true;
+    else if(c===','){row.push(cell);cell='';}
+    else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}
+    else if(c!=='\r')cell+=c;
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+
+function srcStatus(txt,cls,isHtml){
+  const el=document.getElementById('srcStatus');
+  if(isHtml)el.innerHTML=txt;else el.textContent=txt;
+  el.className='src-status'+(cls?' '+cls:'');
+}
+function renderDivGidRows(){
+  const c=document.getElementById('divGidRows');
+  if(!c)return;
+  c.innerHTML=divGidRows.map((r,i)=>`
+    <div class="src-row" style="margin:0">
+      <input type="number" placeholder="Year" class="aikey-input" style="width:100px" value="${esc(r.year)}" onchange="divGidRows[${i}].year=this.value">
+      <input placeholder="gid e.g. 234567890 or tab name" class="aikey-input" style="flex:1;min-width:160px" value="${esc(r.gid)}" onchange="divGidRows[${i}].gid=this.value">
+      <button class="rm" onclick="removeDivGidRow(${i})">✕</button>
+    </div>`).join('');
+}
+function addDivGidRow(){divGidRows.push({year:'',gid:''});renderDivGidRows();}
+function removeDivGidRow(i){divGidRows.splice(i,1);if(!divGidRows.length)divGidRows.push({year:'',gid:''});renderDivGidRows();}
+async function loadFromGid(){
+  const id=extractSheetId(document.getElementById('gSheetId').value);
+  if(!id){srcStatus('Paste your Google Sheet URL or ID first.','err');return;}
+  const refs={
+    log:parseTabRef(document.getElementById('gLogGid').value)||{name:'Investment Log',label:'"Investment Log"'},
+    dash:parseTabRef(document.getElementById('gDashGid').value)
+  };
+  const divRefs=divGidRows
+    .map(r=>({year:(r.year||'').trim()||'Other',ref:parseTabRef(r.gid)}))
+    .filter(r=>r.ref);
+  const btns=[document.getElementById('loadSheetBtn')||{},document.getElementById('syncBtn')||{}];
+  btns.forEach(b=>b.disabled=true);
+  srcStatus('Connecting to Google Sheet…');
+  const report=[];
+  try{
+    let logRows;
+    try{logRows=await fetchTab(id,refs.log);}
+    catch(e){
+      if(e.message==='PRIVATE')throw{isHtml:true,message:shareErrorHTML(id,refs.log)};
+      if(e.message==='NOTFOUND')throw new Error(`No tab found for ${refs.log.label}. Open that tab in Google Sheets and copy the gid from the address bar (the number after #gid=).`);
+      if(e.message==='TIMEOUT'||e.message==='NETWORK'){
+        const imgOk=await imgProbe();const feedOk=liveOk===true;
+        throw{isHtml:true,message:diagHTML(id,refs.log,imgOk,feedOk)};
+      }
+      throw new Error(`Could not open ${refs.log.label}: ${e.message}`);
+    }
+    const parsed=parseInvestmentLog(logRows);
+    if(!parsed.length)throw new Error(`Found ${refs.log.label} but no readable transactions. Expected rows with a Buy/Sell column.`);
+    report.push(`✓ ${refs.log.label}: ${parsed.length} transactions`);
+    // Dashboard
+    let dashPx={},dashDiv=null;
+    if(refs.dash){
+      try{const d=parseDashboard(await fetchTab(id,refs.dash));dashPx=d.px;dashDiv=d.div;report.push(`✓ ${refs.dash.label}: ${Object.keys(dashPx).length} prices`+(dashDiv!=null?` + dividends ${php(dashDiv)}`:''));}
+      catch(e){report.push(`– ${refs.dash.label}: skipped (${e.message})`);}
+    }
+    // Dividend logs — one per configured year row, any year. These always take
+    // priority over the Dashboard's lump dividend figure when any are configured,
+    // since they give a real per-year breakdown; Dashboard is only a fallback.
+    const newDivByYear={},newDivByStock={};
+    for(const{year,ref}of divRefs){
+      try{
+        const r=parseDividendLog(await fetchTab(id,ref));
+        newDivByYear[year]=+((newDivByYear[year]||0)+r.sum).toFixed(2);
+        for(const s in r.byStock)newDivByStock[s]=+((newDivByStock[s]||0)+r.byStock[s]).toFixed(2);
+        report.push(`✓ ${ref.label} (${year}): ${r.count} entries — ${php(r.sum)}`);
+      }
+      catch{report.push(`– ${ref.label} (${year}): skipped`);}
+    }
+    if(dashDiv!=null&&Object.keys(newDivByYear).length)report.push(`ℹ using the ${Object.keys(newDivByYear).length} year row(s) above for dividends — Dashboard's ${php(dashDiv)} figure was not used`);
+    // Apply
+    txs=parsed.map((t,i)=>({...t,id:i+1}));nextId=txs.length+1;
+    const np={};for(const s of new Set(txs.map(t=>t.sym))){if(dashPx[s]!=null)np[s]=dashPx[s];else if(prices[s]!=null)np[s]=prices[s];}
+    prices=np;
+    if(Object.keys(newDivByYear).length){dividendsByYear=newDivByYear;dividendsByStock=newDivByStock;}else if(dashDiv!=null)dividendsByYear={Total:dashDiv};
+    savedGidConfig={id,gids:{log:document.getElementById('gLogGid').value,dash:document.getElementById('gDashGid').value},divRows:divGidRows.filter(r=>r.gid)};
+    activeSym=null;document.getElementById('det').classList.remove('open');
+    Object.keys(newsCache).forEach(k=>delete newsCache[k]);
+    renderAll();doLive(false);
+    document.getElementById('syncBtn').style.display='inline-block';
+    const t=totals();
+    srcStatus(report.join('\n')+`\n\n✓ Loaded: ${t.d.length} holdings · capital ${php(t.cap)} · value ${php(t.val)}.`,'ok');
+  }catch(e){
+    if(e.isHtml)srcStatus(e.message,'err',true);
+    else srcStatus((report.length?report.join('\n')+'\n':'')+'✗ '+e.message,'err');
+  }finally{btns.forEach(b=>b.disabled=false);}
+}
+function imgProbe(){
+  return new Promise(res=>{const img=new Image();const t=setTimeout(()=>res(false),5000);img.onload=()=>{clearTimeout(t);res(true);};img.onerror=()=>{clearTimeout(t);res(false);};img.src='https://docs.google.com/favicon.ico?_='+Date.now();});
+}
+function shareErrorHTML(id,ref){
+  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&${tabParam(ref)}`;
+  return`<b>Google rejected access — the sheet isn't public yet.</b><br>In Google Sheets: <b>Share → General access → "Anyone with the link" → Viewer → Done</b>.<br>Then: <a href="${url}" target="_blank" rel="noopener">click this test link</a> — if a .csv downloads, sharing is correct. If you see a Google sign-in page, sharing is still restricted.`;
+}
+function diagHTML(id,ref,imgOk,feedOk){
+  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&${tabParam(ref)}`;
+  if(imgOk)return`<b>Google is reachable, but this page's requests to it are blocked</b> — likely antivirus web-shield or browser restrictions on files in the Downloads folder.<br><br><b>Try:</b> 1) Move the file to Documents/Desktop and reopen. 2) Right-click → Open with a different browser. 3) Temporarily disable antivirus web protection.<br><br><a href="${url}" target="_blank">Click this test link</a> — if it downloads a .csv, use <b>XLSX import instead</b> (always works).`;
+  if(feedOk)return`<b>Your internet works (live PSE prices are active) but docs.google.com is blocked</b> on this network — DNS filter, office/school network, or Pi-hole.<br><br>Try a mobile hotspot, or use <b>XLSX import: File → Download → Microsoft Excel (.xlsx)</b> in Google Sheets, then import here.`;
+  return`<b>Can't reach docs.google.com.</b> Check your internet connection, or switch to <b>XLSX import</b>: in Google Sheets, go to File → Download → Microsoft Excel (.xlsx), then import that file here — no internet needed.`;
+}
+
+/* ── EXPORT / IMPORT ─────────────────────────────────────────────────── */
+document.getElementById('expBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify({txs,prices,dividendsByYear,dividendsByStock,cash,snapshots,divCalendar,targets,expenses,income,nextExpId,nextIncId,meta:{brand:BRAND,company:COMPANY,sector:SECTOR}},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pse-backup.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);tMsg('Backup downloaded.',false);
+};
+document.getElementById('impBtn').onclick=()=>document.getElementById('impFile').click();
+document.getElementById('impFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const j=JSON.parse(r.result);
+      const looksValid=Array.isArray(j.txs)||Array.isArray(j.expenses)||Array.isArray(j.income)||
+        Array.isArray(j.snapshots)||typeof j.cash==='number'||(j.divCalendar&&typeof j.divCalendar==='object')||
+        (j.targets&&typeof j.targets==='object');
+      if(!looksValid)throw 0;
+      if(Array.isArray(j.txs)){txs=j.txs;nextId=txs.reduce((m,t)=>Math.max(m,t.id||0),0)+1;}
+      if(j.prices)prices=j.prices;
+      if(j.dividendsByYear&&typeof j.dividendsByYear==='object')dividendsByYear=j.dividendsByYear;
+      else if(typeof j.dividends==='number')dividendsByYear={Total:j.dividends};
+      if(j.dividendsByStock&&typeof j.dividendsByStock==='object')dividendsByStock=j.dividendsByStock;
+      if(typeof j.cash==='number')cash=j.cash;
+      if(Array.isArray(j.snapshots))snapshots=j.snapshots;
+      if(j.divCalendar&&typeof j.divCalendar==='object')divCalendar=j.divCalendar;
+      if(j.targets&&typeof j.targets==='object')targets=j.targets;
+      if(Array.isArray(j.expenses))expenses=j.expenses;
+      if(Array.isArray(j.income))income=j.income;
+      if(typeof j.nextExpId==='number')nextExpId=j.nextExpId;
+      if(typeof j.nextIncId==='number')nextIncId=j.nextIncId;
+      if(j.meta){Object.assign(BRAND,j.meta.brand||{});Object.assign(COMPANY,j.meta.company||{});Object.assign(SECTOR,j.meta.sector||{});}
+      renderAll();tMsg(`Backup imported — ${txs.length} transaction(s), ${expenses.length} expense(s), ${income.length} income entr${income.length===1?'y':'ies'}.`,false);
+    }catch{tMsg('Invalid backup file.',true);}
+  };
+  r.readAsText(f);e.target.value='';
+};
+function tMsg(txt,isErr){const m=document.getElementById('tmsg');m.textContent=txt;m.className='tmsg '+(isErr?'err':'ok');setTimeout(()=>{if(m.textContent===txt)m.textContent='';},5000);}
+function startEmpty(){txs=[];nextId=1;prices={};dividendsByYear={};dividendsByStock={};activeSym=null;document.getElementById('det').classList.remove('open');renderAll();srcStatus('Clean slate — import your XLSX or load via gid above.','ok');}
+
+/* ── CLAUDE API ──────────────────────────────────────────────────────── */
+const IS_LOCAL=location.protocol==='file:';
+function getKey(){return(document.getElementById('apiKey').value||'').trim();}
+const KEY_HELP='AI features need an Anthropic API key when running locally. Scroll to the "AI setup" box below, paste your key (sk-ant-…), press Test AI.';
+async function callClaude(prompt,useSearch){
+  const key=getKey();
+  if(IS_LOCAL&&!key)throw new Error(KEY_HELP);
+  const body={model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]};
+  if(useSearch)body.tools=[{type:'web_search_20250305',name:'web_search'}];
+  const headers={'Content-Type':'application/json'};
+  if(key){headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';}
+  let res;
+  try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)});}
+  catch{throw new Error(key?'Network error — check your internet connection.':KEY_HELP);}
+  if(!res.ok){
+    if(res.status===401)throw new Error(key?'API key rejected (401) — check it in the AI setup box.':KEY_HELP);
+    let detail='';
+    try{detail=(await res.json()).error?.message||'';}catch{}
+    throw new Error('AI error '+res.status+(detail?': '+detail:' — try again.'));
+  }
+  return(await res.json()).content.map(i=>i.type==='text'?i.text:'').filter(Boolean).join('\n');
+}
+function pluckJSON(raw){const c=raw.replace(/```json|```/g,'').trim();return JSON.parse(c.slice(c.indexOf('{'),c.lastIndexOf('}')+1));}
+function aiStat(txt,c){const e=document.getElementById('aistat');e.textContent=txt;e.style.color=c||'var(--muted)';}
+async function testAI(){aiStat('Testing…');try{await callClaude('Reply: OK',false);aiStat('✓ AI connected.','var(--up)');}catch(e){aiStat('✗ '+e.message,'var(--down)');}}
+async function fetchNews(sym){
+  const btn=document.getElementById('newsBtn'),nz=document.getElementById('nz');
+  btn.disabled=true;nz.innerHTML=`<div class="empty"><span class="spin"></span>Searching for ${sym} news…</div>`;
+  const r=holding(sym);
+  try{
+    const j=pluckJSON(await callClaude(`Search the web for LATEST news about ${coName(sym)}, PSE ticker ${sym}. I hold ${r.shares} shares @ avg ₱${r.cost.toFixed(2)}, current ₱${r.price}. Respond ONLY raw JSON no fences: {"status":"positive|neutral|negative","status_word":"2-4 word label","headlines":[{"title":"...","date":"...","summary":"one sentence"}],"analysis":"3-4 sentences for a holder in my position","dividend_note":"one sentence on recent dividends or 'No recent dividend news found'"}. Max 4 headlines.`,true));
+    const html=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="spill ${['positive','negative','neutral'].includes(j.status)?j.status:'neu'}">${esc(j.status_word||j.status||'status')}</span><span style="font-size:11px;font-family:var(--mono);color:var(--muted)">fetched ${new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</span></div>${(j.headlines||[]).map(h=>`<div class="hl"><div class="t">${esc(h.title)}</div><div class="d">${esc(h.date||'')}</div><div class="su">${esc(h.summary||'')}</div></div>`).join('')}<div class="analysis"><b>AI read:</b> ${esc(j.analysis||'')}<br><br><b>Dividends:</b> ${esc(j.dividend_note||'')}</div>`;
+    newsCache[sym]=html;nz.innerHTML=html;
+  }catch(e){nz.innerHTML=`<div class="errmsg">${esc(e.message)}${e.message.includes('API key')?' — <button class="btn sm" onclick="document.getElementById(\'apikey\').scrollIntoView({behavior:\'smooth\'})">Set up key ↓</button>':''}</div>`;}
+  finally{btn.disabled=false;}
+}
+/* ── THEME ───────────────────────────────────────────────────────────── */
+const THEME_KEY='pse-theme';
+function applyTheme(mode){
+  document.documentElement.setAttribute('data-theme',mode);
+  const btn=document.getElementById('themeToggle');
+  if(btn)btn.textContent=mode==='light'?'🌙':'☀️';
+  try{localStorage.setItem(THEME_KEY,mode);}catch{}
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
+  applyTheme(cur==='light'?'dark':'light');
+}
+
+/* ── NAV: sidebar drawer + scroll-spy ───────────────────────────────── */
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('scrim').classList.add('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('scrim').classList.remove('show');}
+function setActiveNav(id){
+  document.querySelectorAll('.snav a').forEach(a=>a.classList.toggle('active',a.dataset.spy===id));
+}
+function setupNavSpy(){
+  const ids=['performance-sec','insights-sec','holdings-sec','loaddata-sec','txform-sec','log-sec','dividends-sec','networth-sec','expenses-sec','cashflow-sec','report-sec','divcal-sec','rebalance-sec','ai-sec'];
+  const sections=ids.map(id=>document.getElementById(id)).filter(Boolean);
+  document.querySelectorAll('.snav a').forEach(a=>a.addEventListener('click',()=>setActiveNav(a.dataset.spy)));
+  if(!sections.length)return;
+  const visible=new Set();
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting)visible.add(e.target.id);else visible.delete(e.target.id);});
+    setActiveNav(ids.find(id=>visible.has(id))||'top');
+  },{rootMargin:'-12% 0px -78% 0px',threshold:0});
+  sections.forEach(s=>io.observe(s));
+  setActiveNav('top');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSidebar();});
+
+/* ── BOOT ────────────────────────────────────────────────────────────── */
+applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'light':'dark');
+const hadSaved=load();
+renderAll();
+setupNavSpy();
+// Restore gid fields
+if(savedGidConfig){
+  const g=savedGidConfig;
+  if(g.id){const e=document.getElementById('gSheetId');if(e)e.value=g.id;}
+  if(g.gids){
+    ['log','dash'].forEach(k=>{const e=document.getElementById('g'+k.charAt(0).toUpperCase()+k.slice(1)+'Gid');if(e&&g.gids[k])e.value=g.gids[k];});
+  }
+  if(Array.isArray(g.divRows)&&g.divRows.length)divGidRows=g.divRows;
+  const sb=document.getElementById('syncBtn');if(sb)sb.style.display='inline-block';
+}
+renderDivGidRows();
+// API key
+const ki=document.getElementById('apiKey');
+if(LS){try{const k=LS.getItem(KK);if(k)ki.value=k;}catch{}}
+ki.addEventListener('change',()=>{try{if(ki.value.trim())LS.setItem(KK,ki.value.trim());else LS.removeItem(KK);}catch{}});
+// Auto-save chip
+if(!LS){const e=document.getElementById('sstate');if(e){e.textContent='auto-save unavailable — use Export';e.className='sstate warn';}}
+// Status message
+if(hadSaved){srcStatus('Your saved data restored.'+(savedGidConfig?' Press "↻ Sync latest" to refresh from your sheet.':''),'ok');}
+// Live prices
+const achk=document.getElementById('autoLiveChk')||(()=>({checked:autoLive}))();
+if(typeof achk.checked!=='undefined')achk.checked=autoLive;
+startLiveLoop();
+if(IS_LOCAL&&!getKey())aiStat('Paste a key above to enable AI features.');
+</script>
+</body>
+</html>
